@@ -158,49 +158,443 @@ router.put('/roles/update/:id', authenticateToken, rolesController.updateRole);
  */
 router.delete('/roles/:id', authenticateToken, rolesController.deleteRole);
 
-// Users Table
-// All Users Route
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: Users management
+ */
+
+/**
+ * @swagger
+ * /users/users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     security:
+ *       - customTokenAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/users', authenticateToken, usersController.getUsers);
 
-// Single User Route
+/**
+ * @swagger
+ * /users/users/{id}:
+ *   get:
+ *     summary: Get a single user by ID
+ *     tags: [Users]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User details
+ *       400:
+ *         description: Please provide user_id
+ *       404:
+ *         description: Account does not exist
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/users/:id', authenticateToken, usersController.getUser);
 
-// Update User Route
+/**
+ * @swagger
+ * /users/users/{id}:
+ *   put:
+ *     summary: Update a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - username
+ *               - password
+ *               - role_id
+ *               - num
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role_id:
+ *                 type: integer
+ *               num:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Account does not exist
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/users/:id', authenticateToken, usersController.updateUser);
 
-// Delete User Route
+/**
+ * @swagger
+ * /users/users/{id}:
+ *   delete:
+ *     summary: Delete a user by ID
+ *     tags: [Users]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       400:
+ *         description: Please provide user_id
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.delete('/users/:id', authenticateToken, usersController.deleteUser);
 
-// Contacts Table
-// Add Contacts Route
+
+/**
+ * @swagger
+ * tags:
+ *   name: Contacts
+ *   description: Contacts management
+ */
+
+/**
+ * @swagger
+ * /users/contacts/add:
+ *   post:
+ *     summary: Add a new contact
+ *     tags: [Contacts]
+ *     security:
+ *       - customTokenAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - type
+ *               - num
+ *               - username
+ *             properties:
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *               num:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Contact added successfully
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/contacts/add', authenticateToken, contactsController.addContact);
 
-// All Contacts Route
+/**
+ * @swagger
+ * /users/contacts:
+ *   get:
+ *     summary: Get all contacts
+ *     tags: [Contacts]
+ *     security:
+ *       - customTokenAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all contacts
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/contacts', authenticateToken, contactsController.getContacts);
 
-// Single Contact Route
+/**
+ * @swagger
+ * /users/contacts/{id}:
+ *   get:
+ *     summary: Get a single contact by ID
+ *     tags: [Contacts]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Contact ID
+ *     responses:
+ *       200:
+ *         description: Contact details
+ *       404:
+ *         description: Contact not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/contacts/:id', authenticateToken, contactsController.getContact);
 
-// Update Contact Route
+/**
+ * @swagger
+ * /users/contacts/{id}:
+ *   put:
+ *     summary: Update a contact by ID
+ *     tags: [Contacts]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Contact ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - type
+ *               - num
+ *               - username
+ *             properties:
+ *               name:
+ *                 type: string
+ *               type:
+ *                 type: string
+ *               num:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Contact updated successfully
+ *       404:
+ *         description: Contact not found or unauthorized
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/contacts/:id', authenticateToken, contactsController.updateContact);
 
-// Delete Contact Route
+/**
+ * @swagger
+ * /users/contacts/{id}:
+ *   delete:
+ *     summary: Delete a contact by ID
+ *     tags: [Contacts]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Contact ID
+ *     responses:
+ *       200:
+ *         description: Contact deleted successfully
+ *       404:
+ *         description: Contact not found or unauthorized
+ *       500:
+ *         description: Internal Server Error
+ */
 router.delete('/contacts/:id', authenticateToken, contactsController.deleteContact);
 
-// FrequentLocation Table
-// Add freqLocation Route
+/**
+ * @swagger
+ * tags:
+ *   name: FrequentLocations
+ *   description: Frequent Locations management
+ */
+
+/**
+ * @swagger
+ * /users/freq/add:
+ *   post:
+ *     summary: Add a new frequent location
+ *     tags: [FrequentLocations]
+ *     security:
+ *       - customTokenAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - category
+ *               - name
+ *               - address
+ *               - loc_id
+ *             properties:
+ *               category:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               loc_id:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Frequent location added successfully
+ *       500:
+ *         description: Internal Server Error
+ */
 router.post('/freq/add', authenticateToken, frequentController.addFreq);
 
-// Get all freqLocation Route
+/**
+ * @swagger
+ * /users/freq:
+ *   get:
+ *     summary: Get all frequent locations
+ *     tags: [FrequentLocations]
+ *     security:
+ *       - customTokenAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all frequent locations
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/freq', authenticateToken, frequentController.allFreq);
 
-// Get freqLocation Route
+/**
+ * @swagger
+ * /users/freq/{id}:
+ *   get:
+ *     summary: Get a single frequent location by ID
+ *     tags: [FrequentLocations]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Frequent location ID
+ *     responses:
+ *       200:
+ *         description: Frequent location details
+ *       404:
+ *         description: Frequent location not found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.get('/freq/:id', authenticateToken, frequentController.getFreq);
 
-// Update freqLocation Route
+/**
+ * @swagger
+ * /users/freq/{id}:
+ *   put:
+ *     summary: Update a frequent location by ID
+ *     tags: [FrequentLocations]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Frequent location ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - category
+ *               - name
+ *               - address
+ *               - loc_id
+ *             properties:
+ *               category:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               loc_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Frequent location updated successfully
+ *       404:
+ *         description: Frequent location not found or unauthorized
+ *       500:
+ *         description: Internal Server Error
+ */
 router.put('/freq/:id', authenticateToken, frequentController.updateFreq);
 
-// Delete freqLocation Route
+/**
+ * @swagger
+ * /users/freq/{id}:
+ *   delete:
+ *     summary: Delete a frequent location by ID
+ *     tags: [FrequentLocations]
+ *     security:
+ *       - customTokenAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: Frequent location ID
+ *     responses:
+ *       200:
+ *         description: Frequent location deleted successfully
+ *       404:
+ *         description: Frequent location not found or unauthorized
+ *       500:
+ *         description: Internal Server Error
+ */
 router.delete('/freq/:id', authenticateToken, frequentController.deleteFreq);
 
 module.exports = router;
