@@ -210,6 +210,34 @@ exports.deleteRealLoc = async (req, res) => {
   }
 };
 
+// Fetch the most recent real location for the user
+exports.latestRealLoc = async (req, res) => {
+  try {
+    const userId = req.userId;
+    console.log('UserId:', userId);
+
+    const getLatestRealLocationQuery = `
+      SELECT * FROM realLocation 
+      WHERE user_id = ? 
+      ORDER BY location_at DESC 
+      LIMIT 1
+    `;
+    console.log('Query:', getLatestRealLocationQuery, [userId]);
+
+    const [latestRealLocation] = await db.promise().execute(getLatestRealLocationQuery, [userId]);
+    console.log('Latest Real Location:', latestRealLocation);
+
+    if (latestRealLocation.length === 0) {
+      return res.status(404).json({ error: 'Real location not found' });
+    }
+
+    res.json(latestRealLocation[0]);
+  } catch (error) {
+    console.error('Error fetching the latest real location:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 // Distress Table
 // Create distress
 exports.addDistress = async (req, res) => {

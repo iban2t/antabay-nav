@@ -376,6 +376,9 @@ router.put("/realloc/:id", authenticateToken, navController.updateRealLoc);
  */
 router.delete("/realloc/:id", authenticateToken, navController.deleteRealLoc);
 
+//Fetch most recent real location
+router.get('/realloc/latest', authenticateToken, navController.latestRealLoc);
+
 /**
  * @swagger
  * /nav/distress/add:
