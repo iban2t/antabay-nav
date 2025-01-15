@@ -73,8 +73,58 @@ const authController = require("../controllers/authController");
 // Register Route
 router.post("/auth/register", authController.registerUser);
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     LoginUser:
+ *       type: object
+ *       required:
+ *         - username
+ *         - password
+ *       properties:
+ *         username:
+ *           type: string
+ *           description: The username of the user
+ *         password:
+ *           type: string
+ *           description: The password of the user
+ *       example:
+ *         username: johndoe
+ *         password: password123
+ */
 
-
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginUser'
+ *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token
+ *                 id:
+ *                   type: integer
+ *                   description: User ID
+ *       401:
+ *         description: Invalid username or password
+ *       500:
+ *         description: Internal Server Error
+ */
 
 // Login Route
 router.post("/auth/login", authController.loginUser);
