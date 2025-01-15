@@ -12,6 +12,7 @@ const usersRoute = require('./routes/users');
 const navRoute = require('./routes/nav');
 const zonesRoute = require('./routes/zones');
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 

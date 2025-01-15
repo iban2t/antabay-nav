@@ -8,6 +8,7 @@ const secret_key = config.secretKey;
 // Register
 exports.registerUser = async (req, res) => {
   try {
+    console.log("Registering user");
     const { name, username, password, role_id, num, email, address } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -31,7 +32,8 @@ exports.registerUser = async (req, res) => {
     try {
       const insertUserQuery =
         "INSERT INTO users (name, username, password, role_id, num, email, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
-      await db.query(insertUserQuery, [
+      const connection = await db;
+      await connection.query(insertUserQuery, [
         name,
         username,
         hashedPassword,
@@ -70,39 +72,40 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
     try {
-      const { username, password } = req.body;
-  
-      try {
-        const getUserQuery = "SELECT * FROM users WHERE username = ?";
-        const [rows] = await db.promise().execute(getUserQuery, [username]);
-  
-        if (rows.length === 0) {
-          console.error("Invalid username");
-          return res.status(401).json({ error: "Invalid username or password" });
-        }
-  
-        const user = rows[0];
-        const passwordMatch = await bcrypt.compare(password, user.password);
-  
-        if (!passwordMatch) {
-          console.error("Invalid password");
-          return res.status(401).json({ error: "Invalid username or password" });
-        }
-  
-        const token = jwt.sign(
-          { userId: user.id, username: user.username },
-          secret_key,
-          { expiresIn: "1h" }
-        );
-  
-        res.status(200).json({ token, id: user.id });
-      } catch (error) {
-        console.error("Error getting user from database:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+      const getUserQuery = "SELECT * FROM users WHERE username = ?";
+      const connection = await db;
+      const [rows] = await connection.query(getUserQuery, [username]);
+
+      if (rows.length === 0) {
+        console.error("Invalid username");
+        return res.status(401).json({ error: "Invalid username or password" });
       }
+
+      const user = rows[0];
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (!passwordMatch) {
+        console.error("Invalid password");
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+
+      const token = jwt.sign(
+        { userId: user.id, username: user.username },
+        secret_key,
+        { expiresIn: "1h" }
+      );
+
+      res.status(200).json({ token, id: user.id });
     } catch (error) {
-      console.error("Error logging in user:", error);
+      console.error("Error getting user from database:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
-  };
+  } catch (error) {
+    console.error("Error logging in user:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};

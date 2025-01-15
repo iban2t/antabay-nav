@@ -7,9 +7,25 @@ const options = {
     info: {
       title: 'Antabay',
       version: '1.0.0',
+      description: 'API documentation for Antabay application',
     },
+    components: {
+      securitySchemes: {
+        customTokenAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'Authorization',
+          description: 'Custom token based authentication',
+        },
+      },
+    },
+    security: [
+      {
+        customTokenAuth: [],
+      },
+    ],
   },
-  apis: ['./routes/auth.js'], // Path to the API docs
+  apis: ['./routes/*.js'], // Path to the API docs
 };
 
 const swaggerSpec = swaggerJsdoc(options);

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
+
 /**
  * @swagger
  * components:
@@ -71,7 +72,10 @@ const authController = require("../controllers/authController");
  */
 
 // Register Route
-router.post("/auth/register", authController.registerUser);
+router.post("/register", (req, res, next) => {
+  console.log("Register route hit");
+  next();
+}, authController.registerUser);
 
 /**
  * @swagger
@@ -127,6 +131,6 @@ router.post("/auth/register", authController.registerUser);
  */
 
 // Login Route
-router.post("/auth/login", authController.loginUser);
+router.post("/login", authController.loginUser);
 
 module.exports = router;
