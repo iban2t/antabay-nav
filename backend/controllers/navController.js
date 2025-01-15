@@ -28,7 +28,6 @@ exports.addLoc = async (req, res) => {
 exports.allLocs = async (req, res) => {
   try {
     const userId = req.userId;
-    // const userId = 1;
     const getAllLocationsQuery = "SELECT * FROM location WHERE user_id = ?";
     const [locations] = await db.execute(getAllLocationsQuery, [userId]);
 
@@ -107,7 +106,7 @@ exports.deleteLoc = async (req, res) => {
   }
 };
 
-//Real location Table
+// Real location Table
 // Create a new real location
 exports.addRealLoc = async (req, res) => {
   try {
@@ -116,9 +115,12 @@ exports.addRealLoc = async (req, res) => {
 
     const createRealLocationQuery =
       "INSERT INTO realLocation (location_at, user_id, loc_id, coordinates) VALUES (CURRENT_TIMESTAMP(), ?, ?, POINT(?, ?))";
-    await db
-      .promise()
-      .execute(createRealLocationQuery, [userId, loc_id, latitude, longitude]);
+    await db.execute(createRealLocationQuery, [
+      userId,
+      loc_id,
+      latitude,
+      longitude,
+    ]);
 
     res.status(201).json({ message: "Real location created successfully" });
   } catch (error) {
@@ -133,9 +135,9 @@ exports.allRealLocs = async (req, res) => {
     const userId = req.userId;
     const getAllRealLocationsQuery =
       "SELECT * FROM realLocation WHERE user_id = ?";
-    const [realLocations] = await db
-      .promise()
-      .execute(getAllRealLocationsQuery, [userId]);
+    const [realLocations] = await db.execute(getAllRealLocationsQuery, [
+      userId,
+    ]);
 
     res.json(realLocations);
   } catch (error) {
@@ -151,9 +153,10 @@ exports.getRealLoc = async (req, res) => {
     const userId = req.userId;
     const getRealLocationQuery =
       "SELECT * FROM realLocation WHERE id = ? AND user_id = ?";
-    const [realLocation] = await db
-      .promise()
-      .execute(getRealLocationQuery, [realLocationId, userId]);
+    const [realLocation] = await db.execute(getRealLocationQuery, [
+      realLocationId,
+      userId,
+    ]);
 
     if (realLocation.length === 0) {
       return res.status(404).json({ error: "Real location not found" });
@@ -175,15 +178,13 @@ exports.updateRealLoc = async (req, res) => {
 
     const updateRealLocationQuery =
       "UPDATE realLocation SET loc_id = ?, coordinates = POINT(?, ?) WHERE id = ? AND user_id = ?";
-    await db
-      .promise()
-      .execute(updateRealLocationQuery, [
-        loc_id,
-        latitude,
-        longitude,
-        realLocationId,
-        userId,
-      ]);
+    await db.execute(updateRealLocationQuery, [
+      loc_id,
+      latitude,
+      longitude,
+      realLocationId,
+      userId,
+    ]);
 
     res.json({ message: "Real location updated successfully" });
   } catch (error) {
@@ -200,9 +201,7 @@ exports.deleteRealLoc = async (req, res) => {
 
     const deleteRealLocationQuery =
       "DELETE FROM realLocation WHERE id = ? AND user_id = ?";
-    await db
-      .promise()
-      .execute(deleteRealLocationQuery, [realLocationId, userId]);
+    await db.execute(deleteRealLocationQuery, [realLocationId, userId]);
 
     res.json({ message: "Real location deleted successfully" });
   } catch (error) {
@@ -211,8 +210,8 @@ exports.deleteRealLoc = async (req, res) => {
   }
 };
 
-//Distress Table
-//Create distress
+// Distress Table
+// Create distress
 exports.addDistress = async (req, res) => {
   try {
     const { type, real_id, contact_ids } = req.body;
@@ -223,9 +222,11 @@ exports.addDistress = async (req, res) => {
           INSERT INTO distress (type, user_id, distress_at, real_id)
           VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'), ?)
         `;
-    const [distressResult] = await db
-      .promise()
-      .execute(distressInsertQuery, [type, userId, real_id]);
+    const [distressResult] = await db.execute(distressInsertQuery, [
+      type,
+      userId,
+      real_id,
+    ]);
 
     const distressId = distressResult.insertId;
 
@@ -233,9 +234,7 @@ exports.addDistress = async (req, res) => {
     const distressContactsInsertQuery =
       "INSERT INTO distress_contacts (distress_id, contact_id) VALUES (?, ?)";
     for (const contactId of contact_ids) {
-      await db
-        .promise()
-        .execute(distressContactsInsertQuery, [distressId, contactId]);
+      await db.execute(distressContactsInsertQuery, [distressId, contactId]);
     }
 
     res.status(201).json({ message: "Distress signal created successfully" });
@@ -245,7 +244,7 @@ exports.addDistress = async (req, res) => {
   }
 };
 
-//Get all distress history
+// Get all distress history
 exports.allDistress = async (req, res) => {
   try {
     // Query to retrieve all distress signals along with their associated contacts
@@ -258,7 +257,7 @@ exports.allDistress = async (req, res) => {
     `;
 
     // Execute the query
-    const [distressSignals] = await db.promise().execute(getAllDistressQuery);
+    const [distressSignals] = await db.execute(getAllDistressQuery);
 
     // Send the distress signals as a response
     res.json(distressSignals);
@@ -268,7 +267,7 @@ exports.allDistress = async (req, res) => {
   }
 };
 
-//Get distress by id
+// Get distress by id
 exports.getDistress = async (req, res) => {
   try {
     const distressId = req.params.id;
@@ -284,9 +283,9 @@ exports.getDistress = async (req, res) => {
     `;
 
     // Execute the query
-    const [distressSignal] = await db
-      .promise()
-      .execute(getDistressByIdQuery, [distressId]);
+    const [distressSignal] = await db.execute(getDistressByIdQuery, [
+      distressId,
+    ]);
 
     // Check if distress signal exists
     if (distressSignal.length === 0) {
@@ -301,8 +300,8 @@ exports.getDistress = async (req, res) => {
   }
 };
 
-//Reports table
-//Add report
+// Reports table
+// Add report
 exports.addReport = async (req, res) => {
   try {
     const { type, user_report, address, loc_id } = req.body;
@@ -310,14 +309,15 @@ exports.addReport = async (req, res) => {
 
     const getAuthorityContactsQuery =
       "SELECT id FROM contacts WHERE LOWER(type) = ?";
-    const [authorityContacts] = await db
-      .promise()
-      .execute(getAuthorityContactsQuery, ["authority"]);
+    const [authorityContacts] = await db.execute(getAuthorityContactsQuery, [
+      "authority",
+    ]);
 
     if (authorityContacts.length === 0) {
-      const [authorityContactsCapitalized] = await db
-        .promise()
-        .execute(getAuthorityContactsQuery, ["Authority"]);
+      const [authorityContactsCapitalized] = await db.execute(
+        getAuthorityContactsQuery,
+        ["Authority"]
+      );
       authorityContacts = authorityContactsCapitalized;
     }
 
@@ -329,16 +329,14 @@ exports.addReport = async (req, res) => {
 
     for (const contactId of contactIds) {
       for (const query of reportInsertQueries) {
-        await db
-          .promise()
-          .execute(query, [
-            type,
-            userId,
-            contactId,
-            user_report,
-            address,
-            loc_id,
-          ]);
+        await db.execute(query, [
+          type,
+          userId,
+          contactId,
+          user_report,
+          address,
+          loc_id,
+        ]);
       }
     }
 
@@ -351,12 +349,12 @@ exports.addReport = async (req, res) => {
   }
 };
 
-//Get all reports
+// Get all reports
 exports.allReports = async (req, res) => {
   try {
     const userId = req.userId;
     const getAllReportsQuery = "SELECT * FROM report WHERE user_id = ?";
-    const [reports] = await db.promise().query(getAllReportsQuery, [userId]);
+    const [reports] = await db.execute(getAllReportsQuery, [userId]);
 
     res.json(reports);
   } catch (error) {
@@ -365,16 +363,14 @@ exports.allReports = async (req, res) => {
   }
 };
 
-//Get report by id
+// Get report by id
 exports.getReport = async (req, res) => {
   try {
     const userId = req.userId;
     const reportId = req.params.id;
     const getReportByIdQuery =
       "SELECT * FROM report WHERE id = ? AND user_id = ?";
-    const [report] = await db
-      .promise()
-      .query(getReportByIdQuery, [reportId, userId]);
+    const [report] = await db.execute(getReportByIdQuery, [reportId, userId]);
 
     if (report.length === 0) {
       return res.status(404).json({ error: "Report not found" });
