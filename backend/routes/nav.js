@@ -5,6 +5,35 @@ const authenticateToken = require("../middleware/authenticateToken");
 
 /**
  * @swagger
+ * tags:
+ *   name: Distress
+ *   description: Distress management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Locations
+ *   description: Locations management
+ */
+
+
+/**
+ * @swagger
+ * tags:
+ *   name: RealLocations
+ *   description: RealLocations management
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Reports
+ *   description: Reports management
+ */
+
+/**
+ * @swagger
  * components:
  *   securitySchemes:
  *     customTokenAuth:

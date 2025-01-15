@@ -4,6 +4,13 @@ const authController = require("../controllers/authController");
 
 /**
  * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication management
+ */
+
+/**
+ * @swagger
  * components:
  *   schemas:
  *     RegisterUser:
