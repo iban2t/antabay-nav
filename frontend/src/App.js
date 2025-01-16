@@ -1,8 +1,15 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-import Dashboard from './Dashboard';
 import Login from './Login';
+import Signup from './Signup';
+import Dashboard from './Dashboard';
+import Navigation from './Navigation';
+import Contacts from './Contacts';
+import FreqLoc from './FreqLoc';
+import Distress from './Distress';
+import Reports from './Reports'
+import Zones from './Zones';
 
 function App() {
   return (
@@ -10,7 +17,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard/*" element={<Dashboard />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/navigation/" element={<Navigation />} />
+        <Route path="/dashboard/" element={<Dashboard />} />
+        <Route path="/contacts/" element={<Contacts />} />
+        <Route path="/freqloc/" element={<FreqLoc />} />
+        <Route path="/distress/" element={<Distress />} />
+        <Route path="/reports/" element={<Reports />} />
+        <Route path="/zones/" element={<Zones />} />
       </Routes>
     </Router>
   );
