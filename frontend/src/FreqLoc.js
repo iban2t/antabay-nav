@@ -180,7 +180,7 @@ function FreqLoc() {
                 <br />
                 <div className='pageHeader'>
                     <h3 style={{ marginLeft: "6rem" }}>Frequent Locations</h3>
-                    <div className='addContact' style={{ marginLeft: 'auto', marginRight: '7.5rem' }}>
+                    <div className='addContact' style={{ marginLeft: '6rem', marginRight: '7.5rem' }}>
                         <Button variant="success" onClick={handleShowCreateModal}>Add New Frequent Location</Button>{' '}
                     </div>
                 </div>
