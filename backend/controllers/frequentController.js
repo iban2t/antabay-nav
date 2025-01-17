@@ -3,11 +3,11 @@ const db = require('../database');
 // Add new freqlocation
 exports.addFreq = async (req, res) => {
   try {
-    const { category, name, address, loc_id } = req.body;
+    const { description, name, address, loc_id } = req.body;
     const userId = req.userId; 
 
-    const addFreqLocationQuery = 'INSERT INTO freqLocation (category, name, address, user_id, loc_id) VALUES (?, ?, ?, ?, ?)';
-    await db.execute(addFreqLocationQuery, [category, name, address, userId, loc_id]);
+    const addFreqLocationQuery = 'INSERT INTO freqLocation (description, name, address, user_id, loc_id) VALUES (?, ?, ?, ?, ?)';
+    await db.execute(addFreqLocationQuery, [description, name, address, userId, loc_id]);
 
     res.status(201).json({ message: 'FreqLocation added successfully' });
   } catch (error) {
@@ -54,12 +54,12 @@ exports.getFreq = async (req, res) => {
 // Update freqlocation
 exports.updateFreq = async (req, res) => {
   try {
-    const { category, name, address, loc_id } = req.body;
+    const { description, name, address, loc_id } = req.body;
     const userId = req.userId;
     const freqLocationId = req.params.id;
 
-    const updateFreqLocationQuery = 'UPDATE freqLocation SET category = ?, name = ?, address = ?, loc_id = ? WHERE id = ? AND user_id = ?';
-    const [result] = await db.execute(updateFreqLocationQuery, [category, name, address, loc_id, freqLocationId, userId]);
+    const updateFreqLocationQuery = 'UPDATE freqLocation SET description = ?, name = ?, address = ?, loc_id = ? WHERE id = ? AND user_id = ?';
+    const [result] = await db.execute(updateFreqLocationQuery, [description, name, address, loc_id, freqLocationId, userId]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'FreqLocation not found or unauthorized' });

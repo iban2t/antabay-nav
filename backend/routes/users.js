@@ -465,12 +465,12 @@ router.delete('/contacts/:id', authenticateToken, contactsController.deleteConta
  *           schema:
  *             type: object
  *             required:
- *               - category
+ *               - description
  *               - name
  *               - address
  *               - loc_id
  *             properties:
- *               category:
+ *               description:
  *                 type: string
  *               name:
  *                 type: string
@@ -549,12 +549,12 @@ router.get('/freq/:id', authenticateToken, frequentController.getFreq);
  *           schema:
  *             type: object
  *             required:
- *               - category
+ *               - description
  *               - name
  *               - address
  *               - loc_id
  *             properties:
- *               category:
+ *               description:
  *                 type: string
  *               name:
  *                 type: string
