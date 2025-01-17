@@ -17,13 +17,13 @@ function FreqLoc() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [locationToDelete, setLocationToDelete] = useState(null);
     const [createLocationFormData, setCreateLocationFormData] = useState({
-        category: '',
+        description: '',
         name: '',
         address: '',
         loc_id: ''
     });
     const [editLocationFormData, setEditLocationFormData] = useState({
-        category: '',
+        description: '',
         name: '',
         address: '',
         loc_id: ''
@@ -82,7 +82,7 @@ function FreqLoc() {
 
     const resetCreateForm = () => {
         setCreateLocationFormData({
-            category: '',
+            description: '',
             name: '',
             address: '',
             loc_id: ''
@@ -91,7 +91,7 @@ function FreqLoc() {
 
     const resetEditForm = () => {
         setEditLocationFormData({
-            category: '',
+            description: '',
             name: '',
             address: '',
             loc_id: ''
@@ -120,19 +120,19 @@ function FreqLoc() {
             const token = localStorage.getItem('token');
             const formData = editMode ? editLocationFormData : createLocationFormData;
             if (editMode) {
-                await axios.put(`http://localhost:5000/freq/${editLocationId}`, formData, {
+                await axios.put(`http://localhost:5000/users/freq/${editLocationId}`, formData, {
                     headers: {
                         Authorization: token
                     }
                 });
             } else {
-                await axios.post('http://localhost:5000/freq/add', formData, {
+                await axios.post('http://localhost:5000/users/freq/add', formData, {
                     headers: {
                         Authorization: token
                     }
                 });
             }
-            const res = await axios.get('http://localhost:5000/freq', {
+            const res = await axios.get('http://localhost:5000/users/freq', {
                 headers: {
                     Authorization: token
                 }
@@ -154,12 +154,12 @@ function FreqLoc() {
     const handleDeleteLocation = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/freq/${locationToDelete}`, {
+            await axios.delete(`http://localhost:5000/users/freq/${locationToDelete}`, {
                 headers: {
                     Authorization: token
                 }
             });
-            const res = await axios.get('http://localhost:5000/freq', {
+            const res = await axios.get('http://localhost:5000/users/freq', {
                 headers: {
                     Authorization: token
                 }
@@ -193,7 +193,7 @@ function FreqLoc() {
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Address</th>
-                                <th>Category</th>
+                                <th>Description</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -204,7 +204,7 @@ function FreqLoc() {
                                         <td>{location.id}</td>
                                         <td>{location.name}</td>
                                         <td>{location.address}</td>
-                                        <td>{location.category}</td>
+                                        <td>{location.description}</td>
                                         <td>
                                             <Button variant="primary" onClick={() => handleShowEditModal(location)}>Edit</Button>{' '}
                                             <Button variant="danger" onClick={() => handleShowDeleteModal(location.id)}>Delete</Button>{' '}
@@ -231,9 +231,9 @@ function FreqLoc() {
                                 <Form.Label>Address</Form.Label>
                                 <Form.Control type="text" name="address" value={createLocationFormData.address} onChange={handleCreateLocationFormChange} />
                             </Form.Group>
-                            <Form.Group controlId="category">
-                                <Form.Label>Category</Form.Label>
-                                <Form.Control type="text" name="category" value={createLocationFormData.category} onChange={handleCreateLocationFormChange} />
+                            <Form.Group controlId="description">
+                                <Form.Label>Description</Form.Label>
+                                <Form.Control type="text" name="description" value={createLocationFormData.description} onChange={handleCreateLocationFormChange} />
                             </Form.Group>
                             <Form.Group controlId="loc_id">
                                 <Form.Label>Location</Form.Label>
@@ -271,9 +271,9 @@ function FreqLoc() {
                                 <Form.Label>Address</Form.Label>
                                 <Form.Control type="text" name="address" value={editLocationFormData.address} onChange={handleEditLocationFormChange} />
                             </Form.Group>
-                            <Form.Group controlId="category">
-                                <Form.Label>Category</Form.Label>
-                                <Form.Control type="text" name="category" value={editLocationFormData.category} onChange={handleEditLocationFormChange} />
+                            <Form.Group controlId="description">
+                                <Form.Label>Description</Form.Label>
+                                <Form.Control type="text" name="description" value={editLocationFormData.description} onChange={handleEditLocationFormChange} />
                             </Form.Group>
                             <Form.Group controlId="loc_id">
                                 <Form.Label>Location</Form.Label>
