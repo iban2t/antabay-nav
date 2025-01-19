@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, FlatList, Modal, TouchableOpacity, Style
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { API_BASE_URL } from '@env';
+import config from './config';
 
 const Contacts = () => {
     const [data, setData] = useState([]);
@@ -28,7 +28,7 @@ const Contacts = () => {
         const fetchData = async () => {
             const token = await AsyncStorage.getItem('token');
             try {
-                const res = await axios.get(`${API_BASE_URL}/users/contacts`, {
+                const res = await axios.get(`${config.API_BASE_URL}/users/contacts`, {
                     headers: { Authorization: token }
                 });
                 // Sort contacts alphabetically by name
@@ -107,18 +107,18 @@ const Contacts = () => {
     
             if (editContactId) {
                 // Update existing contact
-                await axios.put(`${API_BASE_URL}/users/contacts/${editContactId}`, processedContactData, {
+                await axios.put(`${config.API_BASE_URL}/users/contacts/${editContactId}`, processedContactData, {
                     headers: { Authorization: token }
                 });
             } else {
                 // Add new contact
-                await axios.post(`${API_BASE_URL}/users/contacts/add`, processedContactData, {
+                await axios.post(`${config.API_BASE_URL}/users/contacts/add`, processedContactData, {
                     headers: { Authorization: token }
                 });
             }
     
             // Fetch updated contacts
-            const res = await axios.get(`${API_BASE_URL}/users/contacts`, {
+            const res = await axios.get(`${config.API_BASE_URL}/users/contacts`, {
                 headers: { Authorization: token }
             });
             const sortedData = res.data.sort((a, b) => a.name.localeCompare(b.name));
@@ -143,10 +143,10 @@ const Contacts = () => {
     const handleDeleteContact = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
-            await axios.delete(`${API_BASE_URL}/users/contacts/${contactToDelete}`, {
+            await axios.delete(`${config.API_BASE_URL}/users/contacts/${contactToDelete}`, {
                 headers: { Authorization: token }
             });
-            const res = await axios.get(`${API_BASE_URL}/users/contacts`, {
+            const res = await axios.get(`${config.API_BASE_URL}/users/contacts`, {
                 headers: { Authorization: token }
             });
             const sortedData = res.data.sort((a, b) => a.name.localeCompare(b.name));

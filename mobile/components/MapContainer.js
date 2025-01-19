@@ -23,7 +23,7 @@ const MapComponent = () => {
     const fetchRealLocation = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const response = await axios.get(`${config.API_BASE_URL}/realloc/latest`, {
+        const response = await axios.get(`${config.API_BASE_URL}/nav/realloc/latest`, {
           headers: { Authorization: token },
         });
 
@@ -85,7 +85,7 @@ const MapComponent = () => {
             real_id: realLocationId,
           };
 
-          await axios.post(`${config.API_BASE_URL}/distress/add`, distressPayload, {
+          await axios.post(`${config.API_BASE_URL}/nav/distress/add`, distressPayload, {
             headers: { Authorization: token },
           });
 
@@ -106,7 +106,7 @@ const MapComponent = () => {
     const fetchLocations = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const response = await axios.get(`${config.API_BASE_URL}/loc`, {
+        const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
           headers: { Authorization: token },
         });
         setLocations(response.data);
@@ -129,7 +129,7 @@ const MapComponent = () => {
           loc_id: locationId,
         };
 
-        await axios.put(`${config.API_BASE_URL}/realloc/${reallocationId}`, reallocationPayload, {
+        await axios.put(`${config.API_BASE_URL}/nav/realloc/${reallocationId}`, reallocationPayload, {
           headers: { Authorization: token },
         });
 

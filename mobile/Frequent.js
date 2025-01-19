@@ -4,7 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@env';
+import config from './config';
 
 function Frequent() {
     const [data, setData] = useState([]);
@@ -34,8 +34,8 @@ function Frequent() {
             try {
                 const token = await AsyncStorage.getItem('token');
                 const [freqRes, locRes] = await Promise.all([
-                    axios.get(`${API_BASE_URL}/users/freq`, { headers: { Authorization: token } }),
-                    axios.get(`${API_BASE_URL}/nav/loc`, { headers: { Authorization: token } })
+                    axios.get(`${config.API_BASE_URL}/users/freq`, { headers: { Authorization: token } }),
+                    axios.get(`${config.API_BASE_URL}/nav/loc`, { headers: { Authorization: token } })
                 ]);
                 setData(freqRes.data);
                 setLocations(locRes.data);
@@ -110,19 +110,19 @@ function Frequent() {
             const token = await AsyncStorage.getItem('token');
             const formData = editMode ? editLocationFormData : createLocationFormData;
             if (editMode) {
-                await axios.put(`${API_BASE_URL}/users/freq/${editLocationId}`, formData, {
+                await axios.put(`${config.API_BASE_URL}/users/freq/${editLocationId}`, formData, {
                     headers: { 
                         Authorization: token 
                     }
                 });
             } else {
-                await axios.post(`${API_BASE_URL}/users/freq/add`, formData, {
+                await axios.post(`${config.API_BASE_URL}/users/freq/add`, formData, {
                     headers: { 
                         Authorization: token 
                     }
                 });
             }
-            const res = await axios.get(`${API_BASE_URL}/users/freq`, {
+            const res = await axios.get(`${config.API_BASE_URL}/users/freq`, {
                 headers: { 
                     Authorization: token 
                 }
@@ -143,12 +143,12 @@ function Frequent() {
     const handleDeleteLocation = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
-            await axios.delete(`${API_BASE_URL}/users/freq/${locationToDelete}`, {
+            await axios.delete(`${config.API_BASE_URL}/users/freq/${locationToDelete}`, {
                 headers: { 
                     Authorization: token 
                 }
             });
-            const res = await axios.get(`${API_BASE_URL}/users/freq`, {
+            const res = await axios.get(`${config.API_BASE_URL}/users/freq`, {
                 headers: { Authorization: token }
             });
             setData(res.data);

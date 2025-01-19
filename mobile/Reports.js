@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, Button, Alert } from 'react-native';
 import { DataTable } from 'react-native-paper'; // Import DataTable from react-native-paper
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@env';
+import config from './config'
 
 function Reports() {
   const [data, setData] = useState([]);
@@ -12,7 +12,7 @@ function Reports() {
     const fetchData = async () => {
       const token = await AsyncStorage.getItem('token');
       try {
-        const response = await axios.get(`${API_BASE_URL}/nav/report`, {
+        const response = await axios.get(`${config.API_BASE_URL}/nav/report`, {
           headers: {
             Authorization: token
           }

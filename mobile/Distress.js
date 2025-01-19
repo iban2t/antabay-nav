@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { DataTable } from 'react-native-paper'; // Import DataTable from react-native-paper
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@env';
+import config from './config'
 
 
 function Distress() {
@@ -13,7 +13,7 @@ function Distress() {
     const fetchData = async () => {
       const token = await AsyncStorage.getItem('token');
       try {
-        const response = await axios.get(`${API_BASE_URL}/nav/distress`, {
+        const response = await axios.get(`${config.API_BASE_URL}/nav/distress`, {
           headers: {
             Authorization: token
           }

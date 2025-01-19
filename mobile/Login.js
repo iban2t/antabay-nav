@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { encode, decode } from 'base-64';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '@env';
+import config from './config';
 
 global.atob = decode; // Set global atob function
 
@@ -20,43 +20,39 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`,{
+      const response = await axios.post(`${config.API_BASE_URL}/auth/login`, {
         username,
         password,
       });
-
+  
       const { token } = response.data;
       console.log('Token:', token);
-
+  
       if (token) {
         const decodedToken = JSON.parse(decode(token.split('.')[1]));
-        console.log('Decoded token: ', decodedToken);
-
+        console.log('Decoded token:', decodedToken);
+  
         await AsyncStorage.setItem('token', token);
-
+  
         navigation.navigate('Main');
       } else {
         throw new Error('Token is undefined');
       }
     } catch (error) {
       if (error.response) {
-        console.error('Error response: ', error.response);
-        if (error.response.status === 401) {
-          setErrorMessage('Wrong username or password');
-        } else {
-          setErrorMessage(`Login failed with status: ${error.response.status}`);
-        }
+        console.error('Error response:', error.response);
+        setErrorMessage(error.response.data.message || 'Login failed');
       } else if (error.request) {
-        console.error('Error request: ', error.request);
-        setErrorMessage(`Login failed with status: ${error.response.status}`);
+        console.error('Error request:', error.request);
+        setErrorMessage('Server unreachable. Check your connection.');
       } else {
-        console.error('Error message: ', error.message);
-        setErrorMessage('An unexpected error occured');
+        console.error('Error message:', error.message);
+        setErrorMessage('An unexpected error occurred.');
       }
     } finally {
-      setIsLoading(false); // Stop loading
+      setIsLoading(false);
     }
-  };
+  };  
 
   return (
     <LinearGradient
