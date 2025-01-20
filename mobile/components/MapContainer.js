@@ -12,36 +12,11 @@ import config from '../config';
 const MapComponent = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [distressActive, setDistressActive] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalInput, setModalInput] = useState('');
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportInput, setReportInput] = useState(''); // Report description
+  const [addressInput, setAddressInput] = useState(''); // Address field
   const [selectedLocation, setSelectedLocation] = useState('');
   const [locations, setLocations] = useState([]);
-  const [realLocationId, setRealLocationId] = useState(null);
-  const [reallocationId, setReallocationId] = useState(null);
-
-  useEffect(() => {
-    const fetchRealLocation = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const response = await axios.get(`${config.API_BASE_URL}/nav/realloc/latest`, {
-          headers: { Authorization: token },
-        });
-
-        if (response.data) {
-          setRealLocationId(response.data);
-          setReallocationId(response.data.id);
-        } else {
-          console.log('No real location found.');
-        }
-      } catch (error) {
-        console.error('Error fetching real location:', error);
-      }
-    };
-
-    if (distressActive) {
-      fetchRealLocation();
-    }
-  }, [distressActive]);
 
   useEffect(() => {
     const getLocationAsync = async () => {
@@ -66,86 +41,49 @@ const MapComponent = () => {
 
   const mapCenter = userLocation || { latitude: 13.6218, longitude: 123.1948 };
 
-  const handleDistressPress = async () => {
-    const newDistressState = !distressActive;
-    setDistressActive(newDistressState);
-
-    if (newDistressState) {
-      try {
-        Alert.alert('Distress Activated', 'Distress sent to contacts.');
-
-        if (userLocation && realLocationId) {
-          const token = await AsyncStorage.getItem('token');
-          const userId = await AsyncStorage.getItem('userId');
-
-          const distressPayload = {
-            description: modalInput,
-            user_id: userId,
-            distress_at: new Date().toISOString(),
-            real_id: realLocationId,
-          };
-
-          await axios.post(`${config.API_BASE_URL}/nav/distress/add`, distressPayload, {
-            headers: { Authorization: token },
-          });
-
-          console.log('Distress data sent to the server.');
-        } else {
-          Alert.alert('Error', 'Unable to fetch location or real location ID.');
-        }
-      } catch (error) {
-        console.error('Error while sending distress signal:', error);
-        Alert.alert('Error', 'Failed to send distress signal.');
-      }
-    } else {
-      setModalVisible(true);
+  const handleReportSubmit = async () => {
+    if (!reportInput || !addressInput || !selectedLocation) {
+      Alert.alert('Error', 'Please fill out all fields.');
+      return;
+    }
+  
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const userId = await AsyncStorage.getItem('userId');
+  
+      const reportPayload = {
+        type: 'Suspicious Activity',
+        user_report: reportInput,
+        address: addressInput,
+        loc_id: selectedLocation,
+      };
+  
+      await axios.post(`${config.API_BASE_URL}/nav/report/add`, reportPayload, {
+        headers: { Authorization: token },
+      });
+  
+      Alert.alert('Report Submitted', 'Thank you for your report.');
+      setReportModalVisible(false);
+      setReportInput('');
+      setAddressInput('');
+      setSelectedLocation('');
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Alert.alert('Error', 'Failed to submit report.');
     }
   };
+  
 
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
-          headers: { Authorization: token },
-        });
-        setLocations(response.data);
-      } catch (error) {
-        console.error('Error fetching locations:', error);
-      }
-    };
-
-    if (modalVisible) fetchLocations();
-  }, [modalVisible]);
-
-  const handleLocationSelect = async (locationId) => {
-    setSelectedLocation(locationId);
-
-    if (reallocationId) {
-      try {
-        const token = await AsyncStorage.getItem('token');
-
-        const reallocationPayload = {
-          loc_id: locationId,
-        };
-
-        await axios.put(`${config.API_BASE_URL}/nav/realloc/${reallocationId}`, reallocationPayload, {
-          headers: { Authorization: token },
-        });
-
-        console.log(`Reallocation record updated with loc_id: ${locationId}`);
-      } catch (error) {
-        console.error('Error updating reallocation record:', error);
-      }
-    } else {
-      console.log('No reallocation record found to update');
+  const fetchLocations = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
+        headers: { Authorization: token },
+      });
+      setLocations(response.data);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
     }
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setModalInput('');
-    setSelectedLocation('');
   };
 
   return (
@@ -169,24 +107,31 @@ const MapComponent = () => {
         )}
       </MapView>
 
+      {/* Report Modal */}
       <Modal
-        visible={modalVisible}
+        visible={reportModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={closeModal}
+        onRequestClose={() => setReportModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Distress Log</Text>
+            <Text style={styles.modalTitle}>Report Suspicious Activity</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter distress description..."
-              value={modalInput}
-              onChangeText={setModalInput}
+              placeholder="Enter report description..."
+              value={reportInput}
+              onChangeText={setReportInput}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter address..."
+              value={addressInput}
+              onChangeText={setAddressInput}
             />
             <Picker
               selectedValue={selectedLocation}
-              onValueChange={handleLocationSelect}
+              onValueChange={(itemValue) => setSelectedLocation(itemValue)}
               style={styles.picker}
             >
               <Picker.Item label="Select Location" value="" />
@@ -194,7 +139,8 @@ const MapComponent = () => {
                 <Picker.Item key={location.id} label={location.name} value={location.id} />
               ))}
             </Picker>
-            <Button title="Submit" onPress={closeModal} color="#800080" />
+            <Button title="Submit Report" onPress={handleReportSubmit} color="#F0AD4E" />
+            <Button title="Cancel" onPress={() => setReportModalVisible(false)} color="#999" />
           </View>
         </View>
       </Modal>
@@ -202,12 +148,15 @@ const MapComponent = () => {
       <View style={styles.buttonContainer}>
         <Button
           title={distressActive ? 'Cancel' : 'Distress'}
-          onPress={handleDistressPress}
+          onPress={() => setDistressActive(!distressActive)}
           color={distressActive ? '#999' : '#D9534F'}
         />
         <Button
           title="Report"
-          onPress={() => Alert.alert('Report Suspicious Activity')}
+          onPress={() => {
+            setReportModalVisible(true);
+            fetchLocations();
+          }}
           color="#F0AD4E"
         />
       </View>
@@ -255,6 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 12,
   },
+  picker: { height: 40, marginBottom: 12 },
 });
 
 export default MapComponent;
