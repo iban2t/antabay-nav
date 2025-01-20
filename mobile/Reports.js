@@ -28,8 +28,8 @@ function Reports() {
   const renderRow = ({ item }) => (
     <DataTable.Row>
       <DataTable.Cell>{item.id}</DataTable.Cell>
-      <DataTable.Cell>{item.description}</DataTable.Cell>
       <DataTable.Cell>{item.user_report}</DataTable.Cell>
+      <DataTable.Cell>{item.address}</DataTable.Cell>
       <DataTable.Cell>{item.report_at}</DataTable.Cell>
     </DataTable.Row>
   );
@@ -40,8 +40,8 @@ function Reports() {
       <DataTable>
         <DataTable.Header>
           <DataTable.Title>ID</DataTable.Title>
-          <DataTable.Title>Description</DataTable.Title>
           <DataTable.Title>Report</DataTable.Title>
+          <DataTable.Title>Address</DataTable.Title>
           <DataTable.Title>Date Reported</DataTable.Title>
         </DataTable.Header>
         <FlatList

@@ -33,9 +33,8 @@ function Distress() {
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Type</th>
+                      <th>Description</th>
                       <th>Date/Time</th>
-                      <th>Sent To</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -43,9 +42,8 @@ function Distress() {
                       data.map((distress, index) => {
                         return <tr key={index}>
                           <td>{distress.id}</td>
-                          <td>{distress.type}</td>
+                          <td>{distress.description}</td>
                           <td>{distress.distress_at}</td>
-                          <td>{distress.contact_names}</td>
                         </tr>
                       })
                     }

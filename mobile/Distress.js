@@ -29,9 +29,8 @@ function Distress() {
   const renderRow = ({ item }) => (
     <DataTable.Row>
       <DataTable.Cell>{item.id}</DataTable.Cell>
-      <DataTable.Cell>{item.type}</DataTable.Cell>
+      <DataTable.Cell>{item.description}</DataTable.Cell>
       <DataTable.Cell>{item.distress_at}</DataTable.Cell>
-      <DataTable.Cell>{item.contact_names}</DataTable.Cell>
     </DataTable.Row>
   );
 
@@ -42,9 +41,8 @@ function Distress() {
       <DataTable>
         <DataTable.Header>
           <DataTable.Title>ID</DataTable.Title>
-          <DataTable.Title>Type</DataTable.Title>
+          <DataTable.Title>Description</DataTable.Title>
           <DataTable.Title>Date/Time</DataTable.Title>
-          <DataTable.Title>Sent To</DataTable.Title>
         </DataTable.Header>
         <FlatList
           data={data}
