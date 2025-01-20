@@ -376,6 +376,20 @@ router.put("/realloc/:id", authenticateToken, navController.updateRealLoc);
  */
 router.delete("/realloc/:id", authenticateToken, navController.deleteRealLoc);
 
+/**
+ * @swagger
+ * /nav/realloc/latest:
+ *  get:
+ *   summary: Fetch most recent real location
+ *  tags: [RealLocations]
+ * security:
+ *  - customTokenAuth: []
+ * responses:
+ * 200:
+ * description: Most recent real location
+ * 500:
+ * description: Internal Server Error
+ */
 //Fetch most recent real location
 router.get('/realloc/latest', authenticateToken, navController.latestRealLoc);
 
