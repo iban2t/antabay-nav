@@ -349,9 +349,9 @@ exports.addReport = async (req, res) => {
     // Prepare batch insert query
     const reportInsertQuery = 
       "INSERT INTO report (user_id, contact_id, user_report, address, loc_id) VALUES ?";
-    const reportValues = contactIds.map((contactId) => [
+    const reportValues = contactIds.map((contact_id) => [
       userId,
-      contactId,
+      contactIds,
       user_report,
       address,
       loc_id,
