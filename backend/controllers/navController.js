@@ -352,18 +352,18 @@ exports.addReport = async (req, res) => {
     const contactIds = authorityContacts.map((contact) => contact.id);
 
     const reportInsertQueries = contactIds.map((contactId) => {
-      return "INSERT INTO report (type, user_id, contact_id, user_report, address, loc_id) VALUES (?, ?, ?, ?, ?, ?)";
+      return "INSERT INTO report (user_id, contact_id, user_report, address, loc_id, report_at) VALUES (?, ?, ?, ?, ?, ?)";
     });
 
     for (const contactId of contactIds) {
       for (const query of reportInsertQueries) {
         await db.execute(query, [
-          type,
           userId,
           contactId,
           user_report,
           address,
           loc_id,
+          report_at,
         ]);
       }
     }
