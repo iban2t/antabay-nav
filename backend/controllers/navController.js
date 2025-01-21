@@ -332,50 +332,41 @@ exports.getDistress = async (req, res) => {
 // Add report
 exports.addReport = async (req, res) => {
   try {
-    const { type, user_report, address, loc_id } = req.body;
+    const { user_report, address, loc_id } = req.body;
     const userId = req.userId;
 
-    const getAuthorityContactsQuery =
-      "SELECT id FROM contacts WHERE LOWER(type) = ?";
-    const [authorityContacts] = await db.execute(getAuthorityContactsQuery, [
-      "authority",
-    ]);
+    // Fetch authority contact IDs
+    const getAuthorityContactsQuery = 
+      "SELECT id FROM contacts WHERE LOWER(type) = 'authority'";
+    const [authorityContacts] = await db.execute(getAuthorityContactsQuery);
 
     if (authorityContacts.length === 0) {
-      const [authorityContactsCapitalized] = await db.execute(
-        getAuthorityContactsQuery,
-        ["Authority"]
-      );
-      authorityContacts = authorityContactsCapitalized;
+      return res.status(404).json({ error: "No authority contacts found" });
     }
 
     const contactIds = authorityContacts.map((contact) => contact.id);
 
-    const reportInsertQueries = contactIds.map((contactId) => {
-      return "INSERT INTO report (user_id, contact_id, user_report, address, loc_id, report_at) VALUES (?, ?, ?, ?, ?, ?)";
-    });
+    // Prepare batch insert query
+    const reportInsertQuery = 
+      "INSERT INTO report (user_id, contact_id, user_report, address, loc_id) VALUES ?";
+    const reportValues = contactIds.map((contactId) => [
+      userId,
+      contactId,
+      user_report,
+      address,
+      loc_id,
+    ]);
 
-    for (const contactId of contactIds) {
-      for (const query of reportInsertQueries) {
-        await db.execute(query, [
-          userId,
-          contactId,
-          user_report,
-          address,
-          loc_id,
-          report_at,
-        ]);
-      }
-    }
+    // Execute batch insert
+    await db.query(reportInsertQuery, [reportValues]);
 
-    res
-      .status(201)
-      .json({ message: "Report sent to authority contacts successfully" });
+    res.status(201).json({ message: "Report sent to authority contacts successfully" });
   } catch (error) {
     console.error("Error creating report:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 // Get all reports
 exports.allReports = async (req, res) => {
