@@ -214,7 +214,10 @@ exports.deleteRealLoc = async (req, res) => {
 exports.latestRealLoc = async (req, res) => {
   try {
     const userId = req.userId;
-    console.log('UserId:', userId);
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
 
     const getLatestRealLocationQuery = `
       SELECT * FROM realLocation 
@@ -222,21 +225,29 @@ exports.latestRealLoc = async (req, res) => {
       ORDER BY location_at DESC 
       LIMIT 1
     `;
-    console.log('Query:', getLatestRealLocationQuery, [userId]);
+
+    console.log(`[INFO]: Executing query to fetch latest real location for user: ${userId}`);
 
     const [latestRealLocation] = await db.promise().execute(getLatestRealLocationQuery, [userId]);
-    console.log('Latest Real Location:', latestRealLocation);
 
     if (latestRealLocation.length === 0) {
       return res.status(404).json({ error: 'Real location not found' });
     }
 
-    res.json(latestRealLocation[0]);
+    console.log('[SUCCESS]: Latest real location fetched:', latestRealLocation[0]);
+
+    res.json({ success: true, data: latestRealLocation[0] });
   } catch (error) {
-    console.error('Error fetching the latest real location:', error.message);
+    console.error('[ERROR]: Fetching latest real location:', error.message);
+
+    if (error.code === 'ER_BAD_DB_ERROR') {
+      return res.status(500).json({ error: 'Database connection issue' });
+    }
+
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 // Distress Table
 // Create distress
