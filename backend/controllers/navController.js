@@ -340,7 +340,6 @@ exports.getDistress = async (req, res) => {
 };
 
 // Reports table
-// Add report
 exports.addReport = async (req, res) => {
   try {
     const { user_report, address, loc_id } = req.body;
@@ -350,11 +349,11 @@ exports.addReport = async (req, res) => {
     const getAuthorityContactsQuery = 'SELECT id FROM contacts WHERE LOWER(type) = ?';
     const [authorityContacts] = await db.promise().execute(getAuthorityContactsQuery, ['authority']);
 
-    if (authorityContacts.length === 0) {
+    if (!authorityContacts || authorityContacts.length === 0) {
       return res.status(404).json({ error: 'No authority contacts found' });
     }
 
-    const contactIds = authorityContacts.map(contact => contact.id);
+    const contactIds = authorityContacts.map(contact => contact.id); // Correctly map the contact IDs
 
     // Insert report for each authority contact
     const insertReportQuery = `
