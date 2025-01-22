@@ -228,7 +228,7 @@ exports.latestRealLoc = async (req, res) => {
 
     console.log(`[INFO]: Executing query to fetch latest real location for user: ${userId}`);
 
-    const [latestRealLocation] = await db.promise().execute(getLatestRealLocationQuery, [userId]);
+    const [latestRealLocation] = await db.execute(getLatestRealLocationQuery, [userId]);
 
     if (latestRealLocation.length === 0) {
       return res.status(404).json({ error: 'Real location not found' });
