@@ -82,15 +82,15 @@ const authenticateToken = require("../middleware/authenticateToken");
  *         loc_id: 1
  *         latitude: 40.6892
  *         longitude: -74.0445
- *     Distress:
+*     Distress:
  *       type: object
  *       required:
- *         - type
+ *         - description
  *         - real_id
  *         - contact_ids
  *       properties:
- *         type:
- *           description: string
+ *         description:
+ *           type: string
  *           description: The type of distress
  *         real_id:
  *           type: integer
@@ -101,7 +101,7 @@ const authenticateToken = require("../middleware/authenticateToken");
  *             type: integer
  *           description: The IDs of the contacts
  *       example:
- *         type: "Emergency"
+ *         description: "Emergency"
  *         real_id: 1
  *         contact_ids: [1, 2, 3]
  *     Report:
@@ -111,9 +111,6 @@ const authenticateToken = require("../middleware/authenticateToken");
  *         - address
  *         - loc_id
  *       properties:
- *         type:
- *           type: string
- *           description: The type of the report
  *         user_report:
  *           type: string
  *           description: The user's report
@@ -124,7 +121,6 @@ const authenticateToken = require("../middleware/authenticateToken");
  *           type: integer
  *           description: The ID of the location
  *       example:
- *         type: "Incident"
  *         user_report: "Details of the incident..."
  *         address: "123 Main St, Anytown, USA"
  *         loc_id: 1
