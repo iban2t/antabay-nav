@@ -340,6 +340,7 @@ exports.getDistress = async (req, res) => {
 };
 
 // Reports table
+//Add Report
 exports.addReport = async (req, res) => {
   try {
     const {user_report, address, loc_id } = req.body;
@@ -347,7 +348,7 @@ exports.addReport = async (req, res) => {
 
     // Fetch authority contact IDs
     const getAuthorityContactsQuery = 'SELECT id FROM contacts WHERE LOWER(type) = ?';
-    const [authorityContacts] = await db.promise().execute(getAuthorityContactsQuery, ['authority']);
+    const [authorityContacts] = await db.execute(getAuthorityContactsQuery, ['authority']);
 
     if (authorityContacts.length === 0) {
       const [authorityContactsCapitalized] = await db.execute(
