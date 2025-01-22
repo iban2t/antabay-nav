@@ -340,32 +340,31 @@ exports.getDistress = async (req, res) => {
 };
 
 // Reports table
-//Add report
+// Add report
 exports.addReport = async (req, res) => {
   try {
-    const { type, user_report, address, loc_id } = req.body;
+    const { user_report, address, loc_id } = req.body;
     const userId = req.userId;
 
+    // Fetch authority contact IDs
     const getAuthorityContactsQuery = 'SELECT id FROM contacts WHERE LOWER(type) = ?';
     const [authorityContacts] = await db.promise().execute(getAuthorityContactsQuery, ['authority']);
 
     if (authorityContacts.length === 0) {
-      const [authorityContactsCapitalized] = await db.promise().execute(getAuthorityContactsQuery, ['Authority']);
-      authorityContacts = authorityContactsCapitalized;
+      return res.status(404).json({ error: 'No authority contacts found' });
     }
 
     const contactIds = authorityContacts.map(contact => contact.id);
 
-    const reportInsertQueries = contactIds.map(contactId => {
-      return 'INSERT INTO report (user_id, contact_id, user_report, address, loc_id) VALUES (?, ?, ?, ?, ?)';
-    });
+    // Insert report for each authority contact
+    const insertReportQuery = `
+      INSERT INTO report (user_id, contact_id, user_report, address, loc_id)
+      VALUES (?, ?, ?, ?, ?)
+    `;
 
     for (const contactId of contactIds) {
-      for (const query of reportInsertQueries) {
-        await db.promise().execute(query, [type, userId, contactId, user_report, address, loc_id]);
-      }
+      await db.promise().execute(insertReportQuery, [userId, contactId, user_report, address, loc_id]);
     }
-
 
     res.status(201).json({ message: 'Report sent to authority contacts successfully' });
   } catch (error) {
@@ -373,6 +372,7 @@ exports.addReport = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 
 // Get all reports
