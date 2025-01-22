@@ -247,7 +247,7 @@ exports.addDistress = async (req, res) => {
 
     // Insert into distress table
     const distressInsertQuery = `
-          INSERT INTO distress (type, user_id, distress_at, real_id)
+          INSERT INTO distress (description, user_id, distress_at, real_id)
           VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'), ?)
         `;
     const [distressResult] = await db.execute(distressInsertQuery, [
@@ -332,7 +332,7 @@ exports.getDistress = async (req, res) => {
 // Add report
 exports.addReport = async (req, res) => {
   try {
-    const { type, user_report, address, loc_id } = req.body;
+    const {user_report, address, loc_id } = req.body;
     const userId = req.userId;
 
     const getAuthorityContactsQuery =
@@ -348,17 +348,17 @@ exports.addReport = async (req, res) => {
       );
       authorityContacts = authorityContactsCapitalized;
     }
+    console.log('Authority Contacts:', authorityContacts);
 
     const contactIds = authorityContacts.map((contact) => contact.id);
 
     const reportInsertQueries = contactIds.map((contactId) => {
-      return "INSERT INTO report (type, user_id, contact_id, user_report, address, loc_id) VALUES (?, ?, ?, ?, ?, ?)";
+      return "INSERT INTO report (user_id, contact_id, user_report, address, loc_id) VALUES (?, ?, ?, ?, ?)";
     });
 
     for (const contactId of contactIds) {
       for (const query of reportInsertQueries) {
         await db.execute(query, [
-          type,
           userId,
           contactId,
           user_report,
