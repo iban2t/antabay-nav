@@ -90,7 +90,7 @@ const authenticateToken = require("../middleware/authenticateToken");
  *         - contact_ids
  *       properties:
  *         type:
- *           type: string
+ *           description: string
  *           description: The type of distress
  *         real_id:
  *           type: integer
@@ -107,7 +107,6 @@ const authenticateToken = require("../middleware/authenticateToken");
  *     Report:
  *       type: object
  *       required:
- *         - type
  *         - user_report
  *         - address
  *         - loc_id
