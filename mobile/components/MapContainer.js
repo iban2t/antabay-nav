@@ -12,12 +12,24 @@ import config from '../config';
 const MapComponent = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [distressActive, setDistressActive] = useState(false);
+  const [distressModalVisible, setDistressModalVisible] = useState(false);
+  const [distressInput, setDistressInput] = useState('');
+  const [realLocationId, setRealLocationId] = useState(null);
+  const [reallocationId, setReallocationId] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [reportInput, setReportInput] = useState(''); // Report description
-  const [addressInput, setAddressInput] = useState(''); // Address field
+  const [reportInput, setReportInput] = useState('');
+  const [addressInput, setAddressInput] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [locations, setLocations] = useState([]);
 
+  //Fetch logged in user credentials
+  const fetchAuthDetails = async () => {
+    const token = await AsyncStorage.getItem('token');
+    const userId = await AsyncStorage.getItem('userId');
+    return { token, userId };
+  };
+
+  //Start tracking user
   useEffect(() => {
     const getLocationAsync = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -41,6 +53,103 @@ const MapComponent = () => {
 
   const mapCenter = userLocation || { latitude: 13.6218, longitude: 123.1948 };
 
+  //Distress Functionality
+  const handleDistressPress = async () => {
+    if (distressActive) {
+      setDistressModalVisible(true);
+      return;
+    }
+  
+    if (!userLocation) {
+      Alert.alert('Error', 'Unable to fetch location.');
+      return;
+    }
+  
+    try {
+      const { token } = await fetchAuthDetails();
+      const createRealLocPayload = {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+        loc_id: null,
+      };
+  
+      const response = await axios.post(
+        `${config.API_BASE_URL}/nav/realloc/add`,
+        createRealLocPayload,
+        { headers: { Authorization: token } }
+      );
+  
+      if (response.data) {
+        setRealLocationId(response.data.id);
+        setDistressActive(true);
+        Alert.alert('Distress Activated', 'Distress sent to contacts.');
+      }
+    } catch (error) {
+      console.error('Error creating new real location:', error);
+      Alert.alert('Error', 'Failed to activate distress.');
+    }
+  };
+
+  const closeDistressModal = async () => {
+    if (!selectedLocation) {
+      Alert.alert('Error', 'Please select a location.');
+      return;
+    }
+  
+    if (realLocationId) {
+      try {
+        const token = await AsyncStorage.getItem('token');
+  
+        const updateRealLocPayload = {
+          loc_id: selectedLocation,  // Use the selected location ID
+        };
+  
+        // Update the real location with the selected loc_id
+        await axios.put(
+          `${config.API_BASE_URL}/nav/realloc/${realLocationId}`,
+          updateRealLocPayload,
+          { headers: { Authorization: token } }
+        );
+  
+        console.log(`Real location updated with loc_id: ${selectedLocation}`);
+      } catch (error) {
+        console.error('Error updating real location:', error);
+        Alert.alert('Error', 'Failed to update real location.');
+      }
+    }
+  
+    setDistressModalVisible(false);
+    setDistressInput('');
+    setSelectedLocation('');
+  };
+  
+
+  //Fetch latest real location for distress log
+  useEffect(() => {
+    const fetchRealLocation = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.get(`${config.API_BASE_URL}/nav/realloc/latest`, {
+          headers: { Authorization: token },
+        });
+
+        if (response.data) {
+          setRealLocationId(response.data);
+          setReallocationId(response.data.id);
+        } else {
+          console.log('No real location found.');
+        }
+      } catch (error) {
+        console.error('Error fetching real location:', error);
+      }
+    };
+
+    if (distressActive) {
+      fetchRealLocation();
+    }
+  }, [distressActive]);
+
+  //Report Functionality
   const handleReportSubmit = async () => {
     if (!reportInput || !addressInput || !selectedLocation) {
       Alert.alert('Error', 'Please fill out all fields.');
@@ -52,12 +161,14 @@ const MapComponent = () => {
       const userId = await AsyncStorage.getItem('userId');
   
       const reportPayload = {
-        type: 'Suspicious Activity',
+        user_id: userId,
         user_report: reportInput,
         address: addressInput,
-        loc_id: selectedLocation,
+        loc_id: selectedLocation,  // This will be the selected location ID
+        report_at: new Date().toISOString(),
       };
   
+      // Submit the report with the selected location ID
       await axios.post(`${config.API_BASE_URL}/nav/report/add`, reportPayload, {
         headers: { Authorization: token },
       });
@@ -74,9 +185,17 @@ const MapComponent = () => {
   };
   
 
+  const closeReportModal = () => {
+    setReportModalVisible(false);
+    setReportInput('');
+    setAddressInput('');
+    setSelectedLocation('');
+  };
+  
+  //List of locations for dropdown
   const fetchLocations = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const { token } = await fetchAuthDetails();
       const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
         headers: { Authorization: token },
       });
@@ -85,6 +204,14 @@ const MapComponent = () => {
       console.error('Error fetching locations:', error);
     }
   };
+
+  //Mount fetchLocations when a modal is active
+  useEffect(() => {
+    if (distressModalVisible || reportModalVisible) {
+      fetchLocations();
+    }
+  }, [distressModalVisible, reportModalVisible]);
+  
 
   return (
     <View style={styles.container}>
@@ -107,12 +234,45 @@ const MapComponent = () => {
         )}
       </MapView>
 
+      
+      {/* Distress Log Modal */}
+      <Modal
+        visible={distressModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={closeDistressModal}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Distress Log</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter distress description..."
+              value={distressInput}
+              onChangeText={setDistressInput}
+            />
+            <Picker
+                selectedValue={selectedLocation}
+                onValueChange={(itemValue) => setSelectedLocation(itemValue)}  // Ensure state is updated
+                style={styles.picker}
+            >
+                <Picker.Item label="Select Location" value="" />
+                {locations.map((location) => (
+                  <Picker.Item key={location.id} label={location.name} value={location.id} />
+                ))}
+            </Picker>
+
+            <Button title="Submit" onPress={closeDistressModal} color="#800080" />
+          </View>
+        </View>
+      </Modal>
+
       {/* Report Modal */}
       <Modal
         visible={reportModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setReportModalVisible(false)}
+        onRequestClose={closeReportModal}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -131,7 +291,7 @@ const MapComponent = () => {
             />
             <Picker
               selectedValue={selectedLocation}
-              onValueChange={(itemValue) => setSelectedLocation(itemValue)}
+              onValueChange={(itemValue) => setSelectedLocation(itemValue)}  // Ensure state is updated
               style={styles.picker}
             >
               <Picker.Item label="Select Location" value="" />
@@ -139,6 +299,7 @@ const MapComponent = () => {
                 <Picker.Item key={location.id} label={location.name} value={location.id} />
               ))}
             </Picker>
+
             <Button title="Submit Report" onPress={handleReportSubmit} color="#F0AD4E" />
             <Button title="Cancel" onPress={() => setReportModalVisible(false)} color="#999" />
           </View>
@@ -146,11 +307,13 @@ const MapComponent = () => {
       </Modal>
 
       <View style={styles.buttonContainer}>
-        <Button
+        {/*Distress Button*/}
+        <Button 
           title={distressActive ? 'Cancel' : 'Distress'}
-          onPress={() => setDistressActive(!distressActive)}
+          onPress={handleDistressPress}
           color={distressActive ? '#999' : '#D9534F'}
         />
+        {/*Report Button*/}
         <Button
           title="Report"
           onPress={() => {
