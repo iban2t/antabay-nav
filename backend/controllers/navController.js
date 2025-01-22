@@ -258,7 +258,7 @@ exports.addDistress = async (req, res) => {
 
     // Insert into distress table
     const distressInsertQuery = `
-          INSERT INTO distress (type, user_id, distress_at, real_id)
+          INSERT INTO distress (description, user_id, distress_at, real_id)
           VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'), ?)
         `;
     const [distressResult] = await db.execute(distressInsertQuery, [
@@ -342,27 +342,38 @@ exports.getDistress = async (req, res) => {
 // Reports table
 exports.addReport = async (req, res) => {
   try {
-    const { user_report, address, loc_id } = req.body;
+    const {user_report, address, loc_id } = req.body;
     const userId = req.userId;
 
     // Fetch authority contact IDs
     const getAuthorityContactsQuery = 'SELECT id FROM contacts WHERE LOWER(type) = ?';
     const [authorityContacts] = await db.promise().execute(getAuthorityContactsQuery, ['authority']);
 
-    if (!authorityContacts || authorityContacts.length === 0) {
-      return res.status(404).json({ error: 'No authority contacts found' });
+    if (authorityContacts.length === 0) {
+      const [authorityContactsCapitalized] = await db.execute(
+        getAuthorityContactsQuery,
+        ["Authority"]
+      );
+      authorityContacts = authorityContactsCapitalized;
     }
+    console.log('Authority Contacts:', authorityContacts);
 
-    const contactIds = authorityContacts.map(contact => contact.id); // Correctly map the contact IDs
+    const contactIds = authorityContacts.map((contact) => contact.id);
 
-    // Insert report for each authority contact
-    const insertReportQuery = `
-      INSERT INTO report (user_id, contact_id, user_report, address, loc_id)
-      VALUES (?, ?, ?, ?, ?)
-    `;
+    const reportInsertQueries = contactIds.map((contactId) => {
+      return "INSERT INTO report (user_id, contact_id, user_report, address, loc_id) VALUES (?, ?, ?, ?, ?)";
+    });
 
     for (const contactId of contactIds) {
-      await db.promise().execute(insertReportQuery, [userId, contactId, user_report, address, loc_id]);
+      for (const query of reportInsertQueries) {
+        await db.execute(query, [
+          userId,
+          contactId,
+          user_report,
+          address,
+          loc_id,
+        ]);
+      }
     }
 
     res.status(201).json({ message: 'Report sent to authority contacts successfully' });
