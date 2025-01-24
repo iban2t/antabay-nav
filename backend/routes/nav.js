@@ -17,7 +17,6 @@ const authenticateToken = require("../middleware/authenticateToken");
  *   description: Locations management
  */
 
-
 /**
  * @swagger
  * tags:
@@ -82,7 +81,7 @@ const authenticateToken = require("../middleware/authenticateToken");
  *         loc_id: 1
  *         latitude: 40.6892
  *         longitude: -74.0445
-*     Distress:
+ *     Distress:
  *       type: object
  *       required:
  *         - description
@@ -164,10 +163,7 @@ router.post("/loc/add", authenticateToken, navController.addLoc);
  *       500:
  *         description: Internal Server Error
  */
-router.get("/loc", authenticateToken, (req, res, next) => {
-     console.log("GET /loc route hit");
-     next();
-   }, navController.allLocs);
+router.get("/loc", authenticateToken, navController.allLocs);
 
 /**
  * @swagger
@@ -373,7 +369,7 @@ router.delete("/realloc/:id", authenticateToken, navController.deleteRealLoc);
 
 /**
  * @swagger
- * /nav/realloc/latest:
+ * /nav/realloc-latest/:
  *   get:
  *     summary: Fetch most recent real location
  *     tags: [RealLocations]
@@ -385,7 +381,10 @@ router.delete("/realloc/:id", authenticateToken, navController.deleteRealLoc);
  *       500:
  *         description: Internal Server Error
  */
-router.get('/realloc/latest', authenticateToken, navController.latestRealLoc);
+router.get('/realloc-latest', authenticateToken, (req, res, next) => {
+  // console.log("Latest real location get hit");
+  next();
+}, navController.latestRealLoc);
 
 /**
  * @swagger
