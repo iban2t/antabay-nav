@@ -8,9 +8,11 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/esm/Container.js';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
+import config from './config.js'
 
 function Contacts() {
     const [data, setData] = useState([]);
+    const baseURL = config.REACT_APP_API_BASE_URL;
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -28,7 +30,7 @@ function Contacts() {
 
     useEffect(()=> {
         const token = localStorage.getItem('token');
-        axios.get('http://localhost:5000/users/contacts', {
+        axios.get(`${baseURL}/users/contacts`, {
             headers: {
                 Authorization: token
             }
@@ -87,21 +89,21 @@ function Contacts() {
             const token = localStorage.getItem('token');
             if (editContactId) {
                 // If editContactId is set, it means we're editing an existing contact
-                await axios.put(`http://localhost:5000/users/contacts/${editContactId}`, contactFormData, {
+                await axios.put(`${baseURL}/users/contacts/${editContactId}`, contactFormData, {
                     headers: {
                         Authorization: token
                     }
                 });
             } else {
                 // Otherwise, it's a new contact being added
-                await axios.post('http://localhost:5000/users/contacts/add', contactFormData, {
+                await axios.post(`${baseURL}/users/contacts/add`, contactFormData, {
                     headers: {
                         Authorization: token
                     }
                 });
             }
             // Refresh the data after saving/updating the contact
-            const res = await axios.get('http://localhost:5000/users/contacts', {
+            const res = await axios.get(`${baseURL}/users/contacts`, {
                 headers: {
                     Authorization: token
                 }
@@ -124,12 +126,12 @@ function Contacts() {
     const handleDeleteContact = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/users/contacts/${contactToDelete}`, {
+            await axios.delete(`${baseURL}/users/contacts/${contactToDelete}`, {
                 headers: {
                     Authorization: token
                 }
             });
-            const res = await axios.get('http://localhost:5000/users/contacts', {
+            const res = await axios.get(`${baseURL}/users/contacts`, {
                 headers: {
                     Authorization: token
                 }

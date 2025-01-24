@@ -86,7 +86,7 @@ const Login = () => {
         </TouchableOpacity>
         {errorMessage ? <Text style={styles.errorMessage}>{errorMessage}</Text> : null}
         <Text style={styles.signUpText}>
-          Don't have an account yet? <Text style={styles.signUpLink} onPress={() => navigation.navigate('SignUp')}>Sign Up</Text>
+          Don't have an account yet? <Text style={styles.signUpLink} onPress={() => navigation.navigate('Signup')}>Sign Up</Text>
         </Text>
       </View>
     </LinearGradient>

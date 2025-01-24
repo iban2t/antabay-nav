@@ -215,6 +215,10 @@ exports.latestRealLoc = async (req, res) => {
   try {
     const userId = req.userId;
 
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
     const getLatestRealLocationQuery = `
       SELECT * FROM realLocation 
       WHERE user_id = ? 
@@ -222,19 +226,28 @@ exports.latestRealLoc = async (req, res) => {
       LIMIT 1
     `;
 
-    const [latestRealLocation] = await db.execute(getLatestRealLocationQuery, [
-      userId,
-    ]);
+    console.log(`[INFO]: Executing query to fetch latest real location for user: ${userId}`);
+
+    const [latestRealLocation] = await db.execute(getLatestRealLocationQuery, [userId]);
 
     if (latestRealLocation.length === 0) {
       return res.status(404).json({ error: "Real location not found" });
     }
 
-    res.json(latestRealLocation[0]);
+    console.log('[SUCCESS]: Latest real location fetched:', latestRealLocation[0]);
+
+    res.json({ success: true, data: latestRealLocation[0] });
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('[ERROR]: Fetching latest real location:', error.message);
+
+    if (error.code === 'ER_BAD_DB_ERROR') {
+      return res.status(500).json({ error: 'Database connection issue' });
+    }
+
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 // Distress Table
 // Create distress
@@ -327,17 +340,15 @@ exports.getDistress = async (req, res) => {
 };
 
 // Reports table
-// Add report
+//Add Report
 exports.addReport = async (req, res) => {
   try {
     const { user_report, address, loc_id } = req.body;
     const userId = req.userId;
 
-    const getAuthorityContactsQuery =
-      "SELECT id FROM contacts WHERE LOWER(type) = ?";
-    const [authorityContacts] = await db.execute(getAuthorityContactsQuery, [
-      "authority",
-    ]);
+    // Fetch authority contact IDs
+    const getAuthorityContactsQuery = 'SELECT id FROM contacts WHERE LOWER(type) = ?';
+    const [authorityContacts] = await db.execute(getAuthorityContactsQuery, ['authority']);
 
     if (authorityContacts.length === 0) {
       const [authorityContactsCapitalized] = await db.execute(
@@ -366,14 +377,14 @@ exports.addReport = async (req, res) => {
       }
     }
 
-    res
-      .status(201)
-      .json({ message: "Report sent to authority contacts successfully" });
+    res.status(201).json({ message: 'Report sent to authority contacts successfully' });
   } catch (error) {
-    console.error("Error creating report:", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error creating report:', error.message);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+
 
 // Get all reports
 exports.allReports = async (req, res) => {

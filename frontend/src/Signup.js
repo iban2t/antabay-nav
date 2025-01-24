@@ -4,8 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import Button from 'react-bootstrap/Button';
 import "bootstrap/dist/css/bootstrap.min.css";
 import './index.css'; // Import CSS file for custom styles
+import config from './config';
 
 const Signup = () => {
+    const baseURL = config.REACT_APP_API_BASE_URL;
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
@@ -29,7 +31,7 @@ const Signup = () => {
     const handleSignup = async (e) => {
         e.preventDefault(); // Prevent default form submission behavior
         try {
-            const response = await axios.post('http://localhost:5000/auth/register', formData);
+            const response = await axios.post(`${baseURL}/auth/register`, formData);
             // Handle successful registration
             if (response.status === 201) {
                 alert('User registered successfully!'); // Display alert

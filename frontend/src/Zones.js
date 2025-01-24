@@ -4,13 +4,15 @@ import Sidebar from "./components/Sidebar.js";
 import axios from 'axios';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/esm/Container.js';
+import config from './config.js';
 
 function Zones() {
+    const baseURL = config.REACT_APP_API_BASE_URL;
     const [data, setData] = useState([]); // Initialize data as an empty array
 
     useEffect(()=> {
         const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-        axios.get('http://localhost:5000/zones/zones', {
+        axios.get(`${baseURL}/zones/zones`, {
             headers: {
                 Authorization: token // Include the token in the request headers
             }
