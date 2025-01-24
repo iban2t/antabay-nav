@@ -4,12 +4,14 @@ import Sidebar from "./components/Sidebar.js";
 import axios from 'axios';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/esm/Container.js';
+import config from './config.js';
 
 function Distress() {
+  const baseURL = config.REACT_APP_API_BASE_URL;
   const [data, setData] = useState([])
     useEffect(()=> {
         const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-        axios.get('http://localhost:5000/nav/distress', {
+        axios.get(`${baseURL}/nav/distress`, {
             headers: {
                 Authorization: token // Include the token in the request headers
             }

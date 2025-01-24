@@ -7,8 +7,10 @@ import Container from 'react-bootstrap/Container';
 import Summary from './components/Summary.js';
 import profile from "./assets/profile.svg";
 import { jwtDecode } from 'jwt-decode';
+import config from './config.js';
 
 const Dashboard = () => {
+  const baseURL = config.REACT_APP_API_BASE_URL;
   const [userData, setUserData] = useState(null);
   const [contactCount, setContactCount] = useState(0);
   const [freqLocCount, setFreqLocCount] = useState(0);
@@ -23,7 +25,7 @@ const Dashboard = () => {
         const userId = getUserIdFromToken(token);
 
         // Fetch user data
-        const userResponse = await axios.get(`http://localhost:5000/users/users/${userId}`, {
+        const userResponse = await axios.get(`${baseURL}/users/users/${userId}`, {
           headers: {
             Authorization: token
           }
@@ -32,7 +34,7 @@ const Dashboard = () => {
         setUserData(userResponse.data);
 
         // Fetch contact count
-        const contactsResponse = await axios.get(`http://localhost:5000/users/contacts`, {
+        const contactsResponse = await axios.get(`${baseURL}/users/contacts`, {
           headers: {
             Authorization: token
           }
@@ -40,7 +42,7 @@ const Dashboard = () => {
         setContactCount(contactsResponse.data.length);
 
         // Fetch frequent locations count
-        const freqLocResponse = await axios.get(`http://localhost:5000/users/freq`, {
+        const freqLocResponse = await axios.get(`${baseURL}/users/freq`, {
           headers: {
             Authorization: token
           }
@@ -48,7 +50,7 @@ const Dashboard = () => {
         setFreqLocCount(freqLocResponse.data.length);
 
         // Fetch distress count
-        const distressResponse = await axios.get(`http://localhost:5000/nav/distress`, {
+        const distressResponse = await axios.get(`${baseURL}}/nav/distress`, {
           headers: {
             Authorization: token
           }
@@ -56,7 +58,7 @@ const Dashboard = () => {
         setDistressCount(distressResponse.data.length);
 
         // Fetch report count
-        const reportResponse = await axios.get(`http://localhost:5000/nav/report`, {
+        const reportResponse = await axios.get(`${baseURL}/nav/report`, {
           headers: {
             Authorization: token
           }
@@ -64,7 +66,7 @@ const Dashboard = () => {
         setReportCount(reportResponse.data.length);
 
         // Fetch zones count
-        const zonesResponse = await axios.get(`http://localhost:5000/zones/zones`, {
+        const zonesResponse = await axios.get(`${baseURL}/zones/zones`, {
           headers: {
             Authorization: token
           }

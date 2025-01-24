@@ -8,8 +8,10 @@ import Button from 'react-bootstrap/Button';
 import Container from 'react-bootstrap/esm/Container.js';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
+import config from './config.js';
 
 function FreqLoc() {
+    const baseURL = config.REACT_APP_API_BASE_URL
     const [data, setData] = useState([]);
     const [locations, setLocations] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -35,7 +37,7 @@ function FreqLoc() {
     useEffect(()=> {
         const token = localStorage.getItem('token');
         // Fetch frequent locations
-        axios.get('http://localhost:5000/users/freq', {
+        axios.get(`${baseURL}/users/freq`, {
             headers: {
                 Authorization: token
             }
@@ -44,7 +46,7 @@ function FreqLoc() {
         .catch(err => console.log(err));
 
         // Fetch available locations for dropdown
-        axios.get('http://localhost:5000/nav/loc', {
+        axios.get(`${baseURL}/nav/loc`, {
             headers: {
                 Authorization: token
             }
@@ -120,19 +122,19 @@ function FreqLoc() {
             const token = localStorage.getItem('token');
             const formData = editMode ? editLocationFormData : createLocationFormData;
             if (editMode) {
-                await axios.put(`http://localhost:5000/users/freq/${editLocationId}`, formData, {
+                await axios.put(`${baseURL}/users/freq/${editLocationId}`, formData, {
                     headers: {
                         Authorization: token
                     }
                 });
             } else {
-                await axios.post('http://localhost:5000/users/freq/add', formData, {
+                await axios.post(`${baseURL}/users/freq/add`, formData, {
                     headers: {
                         Authorization: token
                     }
                 });
             }
-            const res = await axios.get('http://localhost:5000/users/freq', {
+            const res = await axios.get(`${baseURL}/users/freq`, {
                 headers: {
                     Authorization: token
                 }
@@ -154,12 +156,12 @@ function FreqLoc() {
     const handleDeleteLocation = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:5000/users/freq/${locationToDelete}`, {
+            await axios.delete(`${baseURL}/users/freq/${locationToDelete}`, {
                 headers: {
                     Authorization: token
                 }
             });
-            const res = await axios.get('http://localhost:5000/users/freq', {
+            const res = await axios.get(`${baseURL}/users/freq`, {
                 headers: {
                     Authorization: token
                 }

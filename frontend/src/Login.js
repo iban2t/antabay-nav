@@ -4,9 +4,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import "bootstrap/dist/css/bootstrap.css";
 import Button from 'react-bootstrap/Button';
 import { jwtDecode } from 'jwt-decode'
+import config from './config';
 
 const Login = () => {
     const navigate = useNavigate();
+    const baseURL = config.REACT_APP_API_BASE_URL;
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
@@ -14,7 +16,7 @@ const Login = () => {
     const handleLogin = async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/auth/login', { 
+            const response = await axios.post(`${baseURL}/auth/login`, { 
                 username: username,
                 password: password,
             });

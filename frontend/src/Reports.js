@@ -4,13 +4,15 @@ import Sidebar from "./components/Sidebar.js";
 import axios from 'axios';
 import Table from 'react-bootstrap/Table';
 import Container from 'react-bootstrap/esm/Container.js';
+import config from './config.js';
 
 function Reports() {
   const [data, setData] = useState([]);
+  const baseURL = config.REACT_APP_API_BASE_URL
   
   useEffect(() => {
     const token = localStorage.getItem('token'); // Retrieve the token from localStorage
-    axios.get('http://localhost:5000/nav/report', {
+    axios.get(`${baseURL}/nav/report`, {
       headers: {
         Authorization: token // Include the token in the request headers
       }
