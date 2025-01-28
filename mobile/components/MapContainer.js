@@ -129,7 +129,7 @@ const MapComponent = () => {
     const fetchRealLocation = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const response = await axios.get(`${config.API_BASE_URL}/nav/realloc/latest`, {
+        const response = await axios.get(`${config.API_BASE_URL}/nav/realloc-latest`, {
           headers: { Authorization: token },
         });
 
@@ -300,7 +300,7 @@ const MapComponent = () => {
               ))}
             </Picker>
 
-            <Button title="Submit Report" onPress={handleReportSubmit} color="#F0AD4E" />
+            <Button title="Submit Report" onPress={handleReportSubmit} color="#800080" />
             <Button title="Cancel" onPress={() => setReportModalVisible(false)} color="#999" />
           </View>
         </View>
