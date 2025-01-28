@@ -65,22 +65,12 @@ const authenticateToken = require("../middleware/authenticateToken");
  *       type: object
  *       required:
  *         - loc_id
- *         - latitude
- *         - longitude
  *       properties:
  *         loc_id:
  *           type: integer
  *           description: The ID of the location
- *         latitude:
- *           type: number
- *           description: The latitude of the real location
- *         longitude:
- *           type: number
- *           description: The longitude of the real location
  *       example:
  *         loc_id: 1
- *         latitude: 40.6892
- *         longitude: -74.0445
  *     Distress:
  *       type: object
  *       required:

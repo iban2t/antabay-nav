@@ -173,15 +173,13 @@ exports.getRealLoc = async (req, res) => {
 exports.updateRealLoc = async (req, res) => {
   try {
     const realLocationId = req.params.id;
-    const { loc_id, latitude, longitude } = req.body;
+    const { loc_id} = req.body;
     const userId = req.userId;
 
     const updateRealLocationQuery =
-      "UPDATE realLocation SET loc_id = ?, coordinates = POINT(?, ?) WHERE id = ? AND user_id = ?";
+      "UPDATE realLocation SET loc_id = ? WHERE id = ? AND user_id = ?";
     await db.execute(updateRealLocationQuery, [
       loc_id,
-      latitude,
-      longitude,
       realLocationId,
       userId,
     ]);
