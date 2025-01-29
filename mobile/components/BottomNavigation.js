@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Svg, { Path } from 'react-native-svg';
 
@@ -72,20 +72,21 @@ const SvgComponent = ({ focused, iconName, iconSize }) => {
 
 const BottomNavigation = () => {
   const screenOptions = {
-    tabBarShowLabel: false,
     headerShown: false,
     tabBarStyle: {
       position: 'absolute',
       backgroundColor: '#fff',
       height: 70,
-      display: 'flex',
-      flexDirection: 'row'
+      paddingHorizontal: 10,
+      paddingBottom: 10,
+      paddingTop: 10,
     },
   };
 
   const tabTextStyle = {
     fontSize: 12,
     color: '#999',
+    marginTop: 4,
   };
 
   return (
@@ -94,8 +95,9 @@ const BottomNavigation = () => {
         name="Contacts"
         component={Contacts}
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={styles.tabItem}>
               <SvgComponent focused={focused} iconName="contacts" iconSize={24}/>
               <Text style={{ ...tabTextStyle, color: focused ? '#800080' : '#999' }}>Contacts</Text>
             </View>
@@ -106,8 +108,9 @@ const BottomNavigation = () => {
         name="Frequent"
         component={Frequent}
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={styles.tabItem}>
               <SvgComponent focused={focused} iconName="frequent" iconSize={24}/>
               <Text style={{ ...tabTextStyle, color: focused ? '#800080' : '#999' }}>Frequent</Text>
             </View>
@@ -118,8 +121,9 @@ const BottomNavigation = () => {
         name="Navigate"
         component={Navigation}
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={styles.tabItem}>
               <SvgComponent focused={focused} iconName="navigate" iconSize={29}/>
               <Text style={{ ...tabTextStyle, color: focused ? '#800080' : '#999' }}>Navigate</Text>
             </View>
@@ -130,8 +134,9 @@ const BottomNavigation = () => {
         name="Distress"
         component={Distress}
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={styles.tabItem}>
               <SvgComponent focused={focused} iconName="distress" iconSize={28}/>
               <Text style={{ ...tabTextStyle, color: focused ? '#800080' : '#999' }}>Distress</Text>
             </View>
@@ -142,8 +147,9 @@ const BottomNavigation = () => {
         name="Reports"
         component={Reports}
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View style={styles.tabItem}>
               <SvgComponent focused={focused} iconName="reports" iconSize={24}/>
               <Text style={{ ...tabTextStyle, color: focused ? '#800080' : '#999' }}>Reports</Text>
             </View>
@@ -153,5 +159,13 @@ const BottomNavigation = () => {
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+  },
+});
 
 export default BottomNavigation;

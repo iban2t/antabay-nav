@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, Modal, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import config from './config';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Contacts = () => {
     const [data, setData] = useState([]);
@@ -21,6 +22,7 @@ const Contacts = () => {
     const [editContactId, setEditContactId] = useState(null);
     const [contactToDelete, setContactToDelete] = useState(null);
     const [selectedContact, setSelectedContact] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const navigation = useNavigation();
 
@@ -158,33 +160,77 @@ const Contacts = () => {
         }
     };
 
+    // Update the groupContactsByLetter function
+    const groupContactsByLetter = (contacts) => {
+        const filtered = contacts
+            .filter(contact => 
+                contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .sort((a, b) => a.name.localeCompare(b.name)); // Sort filtered results
+        
+        return filtered.reduce((groups, contact) => {
+            const firstLetter = contact.name.charAt(0).toUpperCase();
+            if (!groups[firstLetter]) {
+                groups[firstLetter] = [];
+            }
+            groups[firstLetter].push(contact);
+            return groups;
+        }, {});
+    };
+
+    // Get avatar background color
+    const getAvatarColor = (name) => {
+        const colors = ['#DC3545', '#800080', '#FFC107', '#0D6EFD', '#28A745', '#FF8C00'];
+        const index = name.charCodeAt(0) % colors.length;
+        return colors[index];
+    };
+
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Contacts</Text>
-                <Button title="Add New Contact" onPress={handleShowCreateModal} color="#800080" />
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+                <Icon name="search" size={24} color="#666" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search contact"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
             </View>
 
-            <FlatList
-                data={data}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                    <TouchableOpacity onPress={() => handleShowDetailsModal(item)} style={styles.contactRow}>
-                        <View style={styles.contactInfo}>
-                            <Text>{item.name}</Text>
-                            <Text>{item.num}</Text>
-                        </View>
-                        <View style={styles.actions}>
-                            <TouchableOpacity onPress={() => handleShowEditModal(item)}>
-                                <Text style={styles.actionText}>Edit</Text>
+            {/* Contacts List */}
+            <ScrollView style={styles.contactsList}>
+                {Object.entries(groupContactsByLetter(data)).map(([letter, contacts]) => (
+                    <View key={letter}>
+                        <Text style={styles.sectionHeader}>{letter}</Text>
+                        {contacts.map(contact => (
+                            <TouchableOpacity
+                                key={contact.id}
+                                onPress={() => handleShowDetailsModal(contact)}
+                                style={styles.contactRow}
+                            >
+                                <View style={[styles.avatar, { backgroundColor: getAvatarColor(contact.name) }]}>
+                                    <Text style={styles.avatarText}>
+                                        {contact.name.charAt(0).toUpperCase()}
+                                    </Text>
+                                </View>
+                                <View style={styles.contactInfo}>
+                                    <Text style={styles.contactName}>{contact.name}</Text>
+                                    <Text style={styles.contactType}>{contact.num}</Text>
+                                </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => handleShowDeleteModal(item.id)}>
-                                <Text style={[styles.actionText, { color: 'red' }]}>Delete</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </TouchableOpacity>
-                )}
-            />
+                        ))}
+                    </View>
+                ))}
+            </ScrollView>
+
+            {/* Floating Action Button */}
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={handleShowCreateModal}
+            >
+                <Icon name="add" size={24} color="#FFF" />
+            </TouchableOpacity>
 
             {/* Create, Edit, Delete, and Success Modals here (same as before) */}
             {/* Create Contact Modal */}
@@ -324,38 +370,80 @@ const Contacts = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
-        backgroundColor: '#f8f8f8',
+        backgroundColor: '#fff',
+        paddingBottom: 70,
     },
-    header: {
+    searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
+        padding: 16,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
     },
-    headerTitle: {
-        fontSize: 24,
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        fontSize: 16,
+    },
+    contactsList: {
+        flex: 1,
+    },
+    sectionHeader: {
+        backgroundColor: '#f8f8f8',
+        padding: 8,
+        paddingLeft: 16,
+        fontSize: 16,
         fontWeight: 'bold',
+        color: '#666',
     },
     contactRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
         padding: 12,
-        backgroundColor: '#fff',
+        paddingLeft: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#ddd',
+        borderBottomColor: '#eee',
+    },
+    avatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    avatarText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
     contactInfo: {
         flex: 1,
+    },
+    contactName: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    contactType: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 2,
+    },
+    fab: {
+        position: 'absolute',
+        right: 16,
+        bottom: 80,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#28A745',
         justifyContent: 'center',
-    },
-    actions: {
-        flexDirection: 'row',
-    },
-    actionText: {
-        color: '#007bff',
-        marginHorizontal: 8,
+        alignItems: 'center',
+        elevation: 4,
     },
     modalContainer: {
         flex: 1,
