@@ -10,7 +10,7 @@ const checkAndCreateZones = async () => {
 
     // Thresholds for distress signals and reports
     const distressThreshold = 2; // threshold for distress signals
-    const reportThreshold = 2; // threshold for reports
+    const reportThreshold = 2;   // threshold for reports
 
     // Iterate over each location
     for (const { loc_id } of locationIds) {
@@ -40,9 +40,11 @@ const checkAndCreateZones = async () => {
 // Get all zones
 exports.allZones = async (req, res) => {
   try {
-    // Query to retrieve all zones with location names
+    // Modified query to include counts
     const query = `
-      SELECT z.id, z.type, l.name AS location_name
+      SELECT z.id, z.type, l.name AS location_name,
+        (SELECT COUNT(*) FROM distress WHERE real_id = z.loc_id) as distress_count,
+        (SELECT COUNT(*) FROM report WHERE loc_id = z.loc_id) as report_count
       FROM zones z
       INNER JOIN location l ON z.loc_id = l.id
     `;
@@ -50,7 +52,7 @@ exports.allZones = async (req, res) => {
 
     res.status(200).json({ zones });
   } catch (error) {
-    console.error('Error fetching zones:', error.message);
+    console.error('Error fetching zones:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

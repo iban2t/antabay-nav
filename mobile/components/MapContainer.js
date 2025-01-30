@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Image, Button, Alert, Modal, Text, TextInput } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, StyleSheet, Image, Button, Alert, Modal, Text, TextInput, Switch } from 'react-native';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import markerIcon from '../assets/marker.png';
@@ -21,6 +21,8 @@ const MapComponent = () => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [locations, setLocations] = useState([]);
   const [locationDetails, setLocationDetails] = useState(null);
+  const [zones, setZones] = useState([]);
+  const [showZones, setShowZones] = useState(false);
 
   //Fetch logged in user credentials
   const fetchAuthDetails = async () => {
@@ -260,6 +262,11 @@ const MapComponent = () => {
       const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
         headers: { Authorization: token },
       });
+      console.log('All locations:', response.data.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        coordinates: loc.coordinates
+      })));
       setLocations(response.data);
     } catch (error) {
       console.error('Error fetching locations:', error);
@@ -327,7 +334,7 @@ const MapComponent = () => {
     }
   };
 
-  // Add this effect to fetch address when modal opens
+  // Fetch address when modal opens
   useEffect(() => {
     const fetchLocationDetails = async () => {
       if (distressModalVisible && userLocation) {
@@ -344,6 +351,35 @@ const MapComponent = () => {
 
     fetchLocationDetails();
   }, [distressModalVisible]);
+
+  // Add function to fetch zones
+  const fetchZones = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${config.API_BASE_URL}/zones/zones`, {
+        headers: { Authorization: token }
+      });
+      
+      // Use Set to get unique location names
+      const uniqueZones = [...new Set(response.data.zones.map(zone => zone.location_name))];
+      console.log('Danger Zones:', uniqueZones);
+      
+      setZones(response.data.zones || []);
+      
+      if (locations.length === 0) {
+        fetchLocations();
+      }
+    } catch (error) {
+      console.error('Error fetching zones:', error);
+    }
+  };
+
+  // Add useEffect to fetch zones when toggle is on
+  useEffect(() => {
+    if (showZones) {
+      fetchZones();
+    }
+  }, [showZones]);
 
   return (
     <View style={styles.container}>
@@ -364,15 +400,50 @@ const MapComponent = () => {
             />
           </Marker>
         )}
+
+        {showZones && zones.map(zone => {
+          const location = locations.find(loc => 
+            loc.name.toLowerCase() === zone.location_name.toLowerCase()
+          );
+          if (location && location.coordinates) {
+            // Calculate severity based on counts
+            const totalCount = zone.distress_count + zone.report_count;
+            const baseOpacity = 0.1;
+            const maxOpacity = 0.5;
+            const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
+
+            return (
+              <Circle
+                key={zone.id}
+                center={{
+                  latitude: parseFloat(location.coordinates.x),
+                  longitude: parseFloat(location.coordinates.y)
+                }}
+                radius={100}
+                fillColor={
+                  zone.type === 'Danger Zone' 
+                    ? `rgba(255, 0, 0, ${opacity})`
+                    : `rgba(0, 255, 0, ${opacity})`
+                }
+                strokeColor={
+                  zone.type === 'Danger Zone'
+                    ? `rgba(255, 0, 0, ${opacity + 0.2})`
+                    : `rgba(0, 255, 0, ${opacity + 0.2})`
+                }
+                strokeWidth={2}
+              />
+            );
+          }
+          return null;
+        })}
       </MapView>
 
-      
       {/* Distress Log Modal */}
       <Modal
         visible={distressModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setDistressModalVisible(false)}
+        onRequestClose={closeDistressModal}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -399,21 +470,7 @@ const MapComponent = () => {
               )}
             </View>
 
-            <View style={styles.buttonGroup}>
-              <Button 
-                title="Cancel" 
-                onPress={() => {
-                  setDistressModalVisible(false);
-                  setDistressInput('');
-                }} 
-                color="#999" 
-              />
-              <Button 
-                title="Submit" 
-                onPress={closeDistressModal} 
-                color="#800080" 
-              />
-            </View>
+            <Button title="Submit" onPress={closeDistressModal} color="#800080" />
           </View>
         </View>
       </Modal>
@@ -474,6 +531,17 @@ const MapComponent = () => {
           color="#F0AD4E"
         />
       </View>
+
+      {/* Add toggle switch */}
+      <View style={styles.toggleContainer}>
+        <Text style={styles.toggleLabel}>Show Zones</Text>
+        <Switch
+          value={showZones}
+          onValueChange={setShowZones}
+          trackColor={{ false: "#767577", true: "#800080" }}
+          thumbColor={showZones ? "#fff" : "#f4f3f4"}
+        />
+      </View>
     </View>
   );
 };
@@ -504,7 +572,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
-    gap: 12
   },
   modalTitle: {
     fontSize: 18,
@@ -537,11 +604,25 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
-  buttonGroup: {
+  toggleContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 8,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 10
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toggleLabel: {
+    marginRight: 8,
+    fontSize: 14,
+    color: '#333',
   },
 });
 
