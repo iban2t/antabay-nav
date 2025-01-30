@@ -15,18 +15,26 @@ const MapComponent = () => {
   const [distressModalVisible, setDistressModalVisible] = useState(false);
   const [distressInput, setDistressInput] = useState('');
   const [realLocationId, setRealLocationId] = useState(null);
-  const [reallocationId, setReallocationId] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportInput, setReportInput] = useState('');
   const [addressInput, setAddressInput] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [locations, setLocations] = useState([]);
+  const [locationDetails, setLocationDetails] = useState(null);
 
   //Fetch logged in user credentials
   const fetchAuthDetails = async () => {
-    const token = await AsyncStorage.getItem('token');
-    const userId = await AsyncStorage.getItem('userId');
-    return { token, userId };
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      return { token };
+    } catch (error) {
+      console.error('Error fetching auth details:', error);
+      Alert.alert('Error', 'Authentication failed. Please login again.');
+      throw error;
+    }
   };
 
   //Start tracking user
@@ -67,60 +75,114 @@ const MapComponent = () => {
   
     try {
       const { token } = await fetchAuthDetails();
+
+      // First, fetch locations
+      const locResponse = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
+        headers: { Authorization: token }
+      });
+      setLocations(locResponse.data);
+
+      // Get location details and find matching location
+      const details = await getLocationFromCoordinates(
+        userLocation.latitude,
+        userLocation.longitude
+      );
+
+      // Create real-time location entry with matched location id
       const createRealLocPayload = {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
-        loc_id: null,
+        loc_id: details?.locationId || null
       };
-  
-      const response = await axios.post(
+
+      // First create the real location
+      await axios.post(
         `${config.API_BASE_URL}/nav/realloc/add`,
         createRealLocPayload,
         { headers: { Authorization: token } }
       );
-  
-      if (response.data) {
-        setRealLocationId(response.data.id);
+
+      // Then fetch the latest real location to get its ID
+      const latestResponse = await axios.get(
+        `${config.API_BASE_URL}/nav/realloc-latest`,
+        { headers: { Authorization: token } }
+      );
+
+      if (latestResponse.data && latestResponse.data.data) {
+        setRealLocationId(latestResponse.data.data.id);
+        setLocationDetails(details);
         setDistressActive(true);
         Alert.alert('Distress Activated', 'Distress sent to contacts.');
+      } else {
+        throw new Error('Failed to get real location ID');
       }
     } catch (error) {
-      console.error('Error creating new real location:', error);
+      console.error('Error creating real location:', error.response?.data || error);
       Alert.alert('Error', 'Failed to activate distress.');
     }
   };
 
   const closeDistressModal = async () => {
-    if (!selectedLocation) {
-      Alert.alert('Error', 'Please select a location.');
+    if (!distressInput) {
+      Alert.alert('Error', 'Please enter a description.');
       return;
     }
-  
-    if (realLocationId) {
-      try {
-        const token = await AsyncStorage.getItem('token');
-  
-        const updateRealLocPayload = {
-          loc_id: selectedLocation,  // Use the selected location ID
-        };
-  
-        // Update the real location with the selected loc_id
-        await axios.put(
-          `${config.API_BASE_URL}/nav/realloc/${realLocationId}`,
-          updateRealLocPayload,
-          { headers: { Authorization: token } }
-        );
-  
-        console.log(`Real location updated with loc_id: ${selectedLocation}`);
-      } catch (error) {
-        console.error('Error updating real location:', error);
-        Alert.alert('Error', 'Failed to update real location.');
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const userId = await AsyncStorage.getItem('userId');
+
+      if (!userId) {
+        console.error('No userId found in storage');
+        Alert.alert('Error', 'User ID not found. Please login again.');
+        return;
       }
+
+      // First fetch user's contacts
+      const contactsResponse = await axios.get(
+        `${config.API_BASE_URL}/users/contacts`,
+        { headers: { Authorization: token } }
+      );
+
+      // Get all contact IDs
+      const contactIds = contactsResponse.data.map(contact => contact.id);
+
+      // Create the distress entry (no need to send user_id as it's in the token)
+      const distressPayload = {
+        description: distressInput,
+        real_id: realLocationId,
+        contact_ids: contactIds
+      };
+
+      // Log distress details in the required format
+      console.log(JSON.stringify({
+        description: distressPayload.description,
+        real_id: distressPayload.real_id,
+        contact_ids: distressPayload.contact_ids,
+        user_id: Number(userId) // Just for logging purposes
+      }, null, 2));
+
+      const response = await axios.post(
+        `${config.API_BASE_URL}/nav/distress/add`,
+        distressPayload,
+        { headers: { Authorization: token } }
+      );
+
+      console.log('Distress response:', response.data);
+      setDistressModalVisible(false);
+      setDistressInput('');
+      setDistressActive(false);
+    } catch (error) {
+      console.error('Error creating distress entry:', {
+        error: error.response?.data || error,
+        payload: {
+          description: distressInput,
+          real_id: realLocationId,
+          contactIds: contactIds
+        }
+      });
+      Alert.alert('Error', 'Failed to create distress log.');
     }
-  
-    setDistressModalVisible(false);
-    setDistressInput('');
-    setSelectedLocation('');
   };
   
 
@@ -133,9 +195,8 @@ const MapComponent = () => {
           headers: { Authorization: token },
         });
 
-        if (response.data) {
-          setRealLocationId(response.data);
-          setReallocationId(response.data.id);
+        if (response.data && response.data.data) {
+          setRealLocationId(response.data.data.id);
         } else {
           console.log('No real location found.');
         }
@@ -213,6 +274,77 @@ const MapComponent = () => {
   }, [distressModalVisible, reportModalVisible]);
   
 
+  // Add this function to get address from coordinates and find matching location
+  const getLocationFromCoordinates = async (latitude, longitude) => {
+    try {
+      // Get address from coordinates using Expo Location
+      const result = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude
+      });
+
+      if (result.length > 0) {
+        const address = result[0];
+        
+        // Create a standardized address string
+        const addressString = [
+          address.street,
+          address.district,
+          address.city,
+          address.region
+        ].filter(Boolean).join(', ');
+
+        console.log('Fetched address:', addressString);
+        console.log('Available locations:', locations);
+
+        // Find if this address matches any of our listed locations
+        const matchingLocation = locations.find(loc => 
+          addressString.toLowerCase().includes(loc.name.toLowerCase()) ||
+          loc.name.toLowerCase().includes(address.street?.toLowerCase() || '') ||
+          loc.name.toLowerCase().includes(address.district?.toLowerCase() || '')
+        );
+
+        console.log('Matching location:', matchingLocation);
+
+        if (matchingLocation) {
+          return {
+            address: addressString,
+            locationId: matchingLocation.id,
+            locationName: matchingLocation.name
+          };
+        }
+
+        return {
+          address: addressString,
+          locationId: null,
+          locationName: null
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting location from coordinates:', error);
+      return null;
+    }
+  };
+
+  // Add this effect to fetch address when modal opens
+  useEffect(() => {
+    const fetchLocationDetails = async () => {
+      if (distressModalVisible && userLocation) {
+        const details = await getLocationFromCoordinates(
+          userLocation.latitude,
+          userLocation.longitude
+        );
+        setLocationDetails(details);
+        if (details?.locationId) {
+          setSelectedLocation(details.locationId);
+        }
+      }
+    };
+
+    fetchLocationDetails();
+  }, [distressModalVisible]);
+
   return (
     <View style={styles.container}>
       <MapView
@@ -240,7 +372,7 @@ const MapComponent = () => {
         visible={distressModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={closeDistressModal}
+        onRequestClose={() => setDistressModalVisible(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -251,18 +383,37 @@ const MapComponent = () => {
               value={distressInput}
               onChangeText={setDistressInput}
             />
-            <Picker
-                selectedValue={selectedLocation}
-                onValueChange={(itemValue) => setSelectedLocation(itemValue)}  // Ensure state is updated
-                style={styles.picker}
-            >
-                <Picker.Item label="Select Location" value="" />
-                {locations.map((location) => (
-                  <Picker.Item key={location.id} label={location.name} value={location.id} />
-                ))}
-            </Picker>
+            
+            <View style={styles.locationDisplay}>
+              <Text style={styles.locationLabel}>Current Location:</Text>
+              <Text style={styles.locationText}>
+                {locationDetails?.address || 'Fetching location...'}
+              </Text>
+              {locationDetails?.locationName && (
+                <>
+                  <Text style={styles.locationLabel}>Matched Location:</Text>
+                  <Text style={styles.locationText}>
+                    {locationDetails.locationName}
+                  </Text>
+                </>
+              )}
+            </View>
 
-            <Button title="Submit" onPress={closeDistressModal} color="#800080" />
+            <View style={styles.buttonGroup}>
+              <Button 
+                title="Cancel" 
+                onPress={() => {
+                  setDistressModalVisible(false);
+                  setDistressInput('');
+                }} 
+                color="#999" 
+              />
+              <Button 
+                title="Submit" 
+                onPress={closeDistressModal} 
+                color="#800080" 
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -353,6 +504,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
     borderRadius: 8,
+    gap: 12
   },
   modalTitle: {
     fontSize: 18,
@@ -368,6 +520,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   picker: { height: 40, marginBottom: 12 },
+  locationDisplay: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  locationLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  locationText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10
+  },
 });
 
 export default MapComponent;

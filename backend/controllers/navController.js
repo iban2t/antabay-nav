@@ -251,33 +251,61 @@ exports.latestRealLoc = async (req, res) => {
 // Create distress
 exports.addDistress = async (req, res) => {
   try {
-    const { type, real_id, contact_ids } = req.body;
-    const userId = req.userId;
+    const { description, real_id, contact_ids } = req.body;
+    const userId = req.userId; // Already provided by authenticateToken middleware
+
+    // Log the incoming data
+    console.log(JSON.stringify({
+      description,
+      real_id,
+      contact_ids,
+      user_id: userId
+    }, null, 2));
+
+    // Validate required fields
+    if (!description || !real_id || !contact_ids || !userId) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        message: "Description, real_id, contact_ids, and user authentication are required"
+      });
+    }
 
     // Insert into distress table
     const distressInsertQuery = `
-          INSERT INTO distress (description, user_id, distress_at, real_id)
-          VALUES (?, ?, CONVERT_TZ(NOW(), '+00:00', '+08:00'), ?)
-        `;
-    const [distressResult] = await db.execute(distressInsertQuery, [
-      type,
-      userId,
-      real_id,
-    ]);
+      INSERT INTO distress (description, user_id, distress_at, real_id)
+      VALUES (?, ?, CURRENT_TIMESTAMP(), ?)
+    `;
 
+    const queryParams = [
+      description,
+      userId,
+      real_id
+    ];
+
+    const [distressResult] = await db.execute(distressInsertQuery, queryParams);
     const distressId = distressResult.insertId;
 
-    // Insert into distress_contacts table for each contact
-    const distressContactsInsertQuery =
-      "INSERT INTO distress_contacts (distress_id, contact_id) VALUES (?, ?)";
-    for (const contactId of contact_ids) {
-      await db.execute(distressContactsInsertQuery, [distressId, contactId]);
+    // Insert contacts
+    if (contact_ids.length > 0) {
+      const distressContactsInsertQuery =
+        "INSERT INTO distress_contacts (distress_id, contact_id) VALUES (?, ?)";
+      
+      await Promise.all(contact_ids.map(contactId => 
+        db.execute(distressContactsInsertQuery, [distressId, contactId])
+      ));
     }
 
-    res.status(201).json({ message: "Distress signal created successfully" });
+    res.status(201).json({ 
+      success: true,
+      message: "Distress signal created successfully",
+      distressId 
+    });
   } catch (error) {
-    console.error("Error creating distress signal:", error.message);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error creating distress signal:", error);
+    res.status(500).json({ 
+      error: "Internal Server Error",
+      message: error.message
+    });
   }
 };
 
