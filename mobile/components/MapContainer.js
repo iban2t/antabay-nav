@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Image, Button, Alert, Modal, Text, TextInput, Switch } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import MapView, { Marker, Circle, Callout } from 'react-native-maps';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import markerIcon from '../assets/marker.png';
@@ -23,6 +23,7 @@ const MapComponent = () => {
   const [locationDetails, setLocationDetails] = useState(null);
   const [zones, setZones] = useState([]);
   const [showZones, setShowZones] = useState(false);
+  const [userAddress, setUserAddress] = useState(null);
 
   //Fetch logged in user credentials
   const fetchAuthDetails = async () => {
@@ -78,7 +79,7 @@ const MapComponent = () => {
     try {
       const { token } = await fetchAuthDetails();
 
-      // First, fetch locations
+      // Fetch locations
       const locResponse = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
         headers: { Authorization: token }
       });
@@ -97,14 +98,14 @@ const MapComponent = () => {
         loc_id: details?.locationId || null
       };
 
-      // First create the real location
+      // Create the real location
       await axios.post(
         `${config.API_BASE_URL}/nav/realloc/add`,
         createRealLocPayload,
         { headers: { Authorization: token } }
       );
 
-      // Then fetch the latest real location to get its ID
+      // Fetch the latest real location to get its ID
       const latestResponse = await axios.get(
         `${config.API_BASE_URL}/nav/realloc-latest`,
         { headers: { Authorization: token } }
@@ -140,7 +141,7 @@ const MapComponent = () => {
         return;
       }
 
-      // First fetch user's contacts
+      // Fetch user's contacts
       const contactsResponse = await axios.get(
         `${config.API_BASE_URL}/users/contacts`,
         { headers: { Authorization: token } }
@@ -149,7 +150,7 @@ const MapComponent = () => {
       // Get all contact IDs
       const contactIds = contactsResponse.data.map(contact => contact.id);
 
-      // Create the distress entry (no need to send user_id as it's in the token)
+      // Create the distress entry
       const distressPayload = {
         description: distressInput,
         real_id: realLocationId,
@@ -161,7 +162,7 @@ const MapComponent = () => {
         description: distressPayload.description,
         real_id: distressPayload.real_id,
         contact_ids: distressPayload.contact_ids,
-        user_id: Number(userId) // Just for logging purposes
+        user_id: Number(userId)
       }, null, 2));
 
       const response = await axios.post(
@@ -227,7 +228,7 @@ const MapComponent = () => {
         user_id: userId,
         user_report: reportInput,
         address: addressInput,
-        loc_id: selectedLocation,  // This will be the selected location ID
+        loc_id: selectedLocation,
         report_at: new Date().toISOString(),
       };
   
@@ -281,7 +282,7 @@ const MapComponent = () => {
   }, [distressModalVisible, reportModalVisible]);
   
 
-  // Add this function to get address from coordinates and find matching location
+  // Get address from coordinates and find matching location
   const getLocationFromCoordinates = async (latitude, longitude) => {
     try {
       // Get address from coordinates using Expo Location
@@ -352,7 +353,7 @@ const MapComponent = () => {
     fetchLocationDetails();
   }, [distressModalVisible]);
 
-  // Add function to fetch zones
+  // Function to fetch zones
   const fetchZones = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -381,6 +382,20 @@ const MapComponent = () => {
     }
   }, [showZones]);
 
+  // Add useEffect to update address when location changes
+  useEffect(() => {
+    const updateUserAddress = async () => {
+      if (userLocation) {
+        const details = await getLocationFromCoordinates(
+          userLocation.latitude,
+          userLocation.longitude
+        );
+        setUserAddress(details?.address);
+      }
+    };
+    updateUserAddress();
+  }, [userLocation]);
+
   return (
     <View style={styles.container}>
       <MapView
@@ -398,6 +413,14 @@ const MapComponent = () => {
               source={distressActive ? distressIcon : markerIcon}
               style={styles.marker}
             />
+            <Callout>
+              <View style={styles.calloutContainer}>
+                <Text style={styles.calloutTitle}>Current Location</Text>
+                <Text style={styles.calloutText}>
+                  {userAddress || 'Fetching address...'}
+                </Text>
+              </View>
+            </Callout>
           </Marker>
         )}
 
@@ -406,32 +429,51 @@ const MapComponent = () => {
             loc.name.toLowerCase() === zone.location_name.toLowerCase()
           );
           if (location && location.coordinates) {
-            // Calculate severity based on counts
             const totalCount = zone.distress_count + zone.report_count;
             const baseOpacity = 0.1;
             const maxOpacity = 0.5;
             const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
 
             return (
-              <Circle
-                key={zone.id}
-                center={{
-                  latitude: parseFloat(location.coordinates.x),
-                  longitude: parseFloat(location.coordinates.y)
-                }}
-                radius={100}
-                fillColor={
-                  zone.type === 'Danger Zone' 
-                    ? `rgba(255, 0, 0, ${opacity})`
-                    : `rgba(0, 255, 0, ${opacity})`
-                }
-                strokeColor={
-                  zone.type === 'Danger Zone'
-                    ? `rgba(255, 0, 0, ${opacity + 0.2})`
-                    : `rgba(0, 255, 0, ${opacity + 0.2})`
-                }
-                strokeWidth={2}
-              />
+              <React.Fragment key={zone.id}>
+                <Circle
+                  center={{
+                    latitude: parseFloat(location.coordinates.x),
+                    longitude: parseFloat(location.coordinates.y)
+                  }}
+                  radius={100}
+                  fillColor={
+                    zone.type === 'Danger Zone' 
+                      ? `rgba(255, 0, 0, ${opacity})`
+                      : `rgba(0, 255, 0, ${opacity})`
+                  }
+                  strokeColor={
+                    zone.type === 'Danger Zone'
+                      ? `rgba(255, 0, 0, ${opacity + 0.2})`
+                      : `rgba(0, 255, 0, ${opacity + 0.2})`
+                  }
+                  strokeWidth={2}
+                />
+                <Marker
+                  coordinate={{
+                    latitude: parseFloat(location.coordinates.x),
+                    longitude: parseFloat(location.coordinates.y)
+                  }}
+                  opacity={0}
+                >
+                  <Callout>
+                    <View style={styles.calloutContainer}>
+                      <Text style={styles.calloutTitle}>{zone.location_name}</Text>
+                      <Text style={styles.calloutText}>
+                        Distress Signals: {zone.distress_count}
+                      </Text>
+                      <Text style={styles.calloutText}>
+                        Reports: {zone.report_count}
+                      </Text>
+                    </View>
+                  </Callout>
+                </Marker>
+              </React.Fragment>
             );
           }
           return null;
@@ -470,7 +512,21 @@ const MapComponent = () => {
               )}
             </View>
 
-            <Button title="Submit" onPress={closeDistressModal} color="#800080" />
+            <View style={styles.buttonGroup}>
+              <Button 
+                title="Cancel" 
+                onPress={() => {
+                  setDistressModalVisible(false);
+                  setDistressInput('');
+                }} 
+                color="#999" 
+              />
+              <Button 
+                title="Submit" 
+                onPress={closeDistressModal} 
+                color="#800080" 
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -532,7 +588,7 @@ const MapComponent = () => {
         />
       </View>
 
-      {/* Add toggle switch */}
+      {/* Zones Toggle switch */}
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Show Zones</Text>
         <Switch
@@ -606,10 +662,10 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     position: 'absolute',
-    top: 40,
-    right: 20,
+    top: 10,
+    right: 10,
     backgroundColor: 'white',
-    padding: 10,
+    padding: 3,
     borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -623,6 +679,26 @@ const styles = StyleSheet.create({
     marginRight: 8,
     fontSize: 14,
     color: '#333',
+  },
+  calloutContainer: {
+    width: 150,
+    padding: 8,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginBottom: 4,
+    color: '#333',
+  },
+  calloutText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    gap: 10
   },
 });
 
