@@ -4,19 +4,20 @@ import { Link } from 'react-router-dom';
 import TopNavigation from "./components/TopNavigation.js";
 import Sidebar from "./components/Sidebar.js";
 import Container from 'react-bootstrap/Container';
-import Summary from './components/Summary.js';
-import profile from "./assets/profile.svg";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { jwtDecode } from 'jwt-decode';
 import config from './config.js';
 
 const Dashboard = () => {
   const baseURL = config.REACT_APP_API_BASE_URL;
   const [userData, setUserData] = useState(null);
-  const [contactCount, setContactCount] = useState(0);
-  const [freqLocCount, setFreqLocCount] = useState(0);
   const [distressCount, setDistressCount] = useState(0);
   const [reportCount, setReportCount] = useState(0);
   const [zonesCount, setZonesCount] = useState(0);
+  const [distressHistory, setDistressHistory] = useState([]);
+  const [reportsByLocation, setReportsByLocation] = useState([]);
+  const [zoneDistribution, setZoneDistribution] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,61 +25,74 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         const userId = getUserIdFromToken(token);
 
-        // Fetch user data
         const userResponse = await axios.get(`${baseURL}/users/users/${userId}`, {
-          headers: {
-            Authorization: token
-          }
+          headers: { Authorization: token }
         });
-        console.log("User data:", userResponse.data);
         setUserData(userResponse.data);
 
-        // Fetch contact count
-        const contactsResponse = await axios.get(`${baseURL}/users/contacts`, {
-          headers: {
-            Authorization: token
-          }
-        });
-        setContactCount(contactsResponse.data.length);
-
-        // Fetch frequent locations count
-        const freqLocResponse = await axios.get(`${baseURL}/users/freq`, {
-          headers: {
-            Authorization: token
-          }
-        });
-        setFreqLocCount(freqLocResponse.data.length);
-
-        // Fetch distress count
-        const distressResponse = await axios.get(`${baseURL}}/nav/distress`, {
-          headers: {
-            Authorization: token
-          }
+        const distressResponse = await axios.get(`${baseURL}/nav/distress`, {
+          headers: { Authorization: token }
         });
         setDistressCount(distressResponse.data.length);
 
-        // Fetch report count
         const reportResponse = await axios.get(`${baseURL}/nav/report`, {
-          headers: {
-            Authorization: token
-          }
+          headers: { Authorization: token }
         });
         setReportCount(reportResponse.data.length);
 
-        // Fetch zones count
         const zonesResponse = await axios.get(`${baseURL}/zones/zones`, {
-          headers: {
-            Authorization: token
-          }
+          headers: { Authorization: token }
         });
         setZonesCount(zonesResponse.data.zones.length);
+
+        const processedDistressData = distressResponse.data.map(item => ({
+          date: new Date(item.distress_at).toLocaleDateString(),
+          count: 1
+        })).reduce((acc, curr) => {
+          const existing = acc.find(item => item.date === curr.date);
+          if (existing) {
+            existing.count += curr.count;
+          } else {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        setDistressHistory(processedDistressData);
+
+        const reportData = reportResponse.data.reduce((acc, curr) => {
+          const existing = acc.find(item => item.location === curr.address);
+          if (existing) {
+            existing.count += 1;
+          } else {
+            acc.push({ location: curr.address, count: 1 });
+          }
+          return acc;
+        }, []);
+        setReportsByLocation(reportData);
+
+        const zoneData = zonesResponse.data.zones.reduce((acc, curr) => {
+          const existing = acc.find(item => item.name === curr.location_name);
+          if (existing) {
+            existing.value += 1;
+          } else {
+            acc.push({ name: curr.location_name, value: 1 });
+          }
+          return acc;
+        }, []);
+        setZoneDistribution(zoneData);
+
+        const usersResponse = await axios.get(`${baseURL}/users/users`, {
+          headers: { Authorization: token }
+        });
+        setTotalUsers(usersResponse.data.length);
+
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
 
     fetchData();
-  }, []);
+  }, [baseURL]);
 
   const getUserIdFromToken = (token) => {
     const decodedToken = jwtDecode(token);
@@ -90,68 +104,149 @@ const Dashboard = () => {
       <TopNavigation />
       <Sidebar />
 
-      <br />
       <div className='pageHeader'>
         <h3 style={{ marginLeft: "6rem" }}>Dashboard</h3>
       </div>
-      <br />
 
-      <Container style={{ marginLeft: "7rem" }}>
-        {userData && (
-          <div className='tray'>
-            <div className='innertray'>
-            <Summary
-                color="#E6E6E6"
-                title={<span style={{ color: 'black' }}>Me</span>}
-                number={<img src={profile} alt="profile" width={160} />}
-                description={<span style={{ color: 'black' }}>{userData?.name || 'Loading...'}</span>}
-              />
-              <Link to="/contacts" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Summary
-                  color="#BE29EC"
-                  title="Contacts"
-                  number={contactCount}
-                  description="Saved Contacts"
-                />
-              </Link>
-              <Link to="/freqloc" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Summary
-                  color="#BE29EC"
-                  title="Frequent Locations"
-                  number={freqLocCount}
-                  description="Frequent Locations"
-                />
-              </Link>
-            </div>
-            <div className='innertray'>
-              <Link to="/distress" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Summary
-                  color="#D9534F"
-                  title="Distress"
-                  number={distressCount}
-                  description="Signals Sent"
-                />
-              </Link>
-              <Link to="/reports" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Summary
-                  color="#F0AD4E"
-                  title="Reports"
-                  number={reportCount}
-                  description="Created Reports"
-                />
-              </Link>
-              <Link to="/zones" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Summary
-                  color="#198754"
-                  title="Zones"
-                  number={zonesCount}
-                  description="Generated Zones"
-                />
-              </Link>
+      <Container style={{ marginLeft: "7rem", marginTop: "2rem" }}>
+        <div className="stats-container">
+          <div className="stat-card" style={{ backgroundColor: '#BE29EC' }}>
+            <div className="stat-icon">👥</div>
+            <div className="stat-content">
+              <h3>{totalUsers}</h3>
+              <p>Total Users</p>
             </div>
           </div>
-        )}
+
+          <Link to="/distress" style={{ textDecoration: 'none' }}>
+            <div className="stat-card" style={{ backgroundColor: '#D9534F' }}>
+              <div className="stat-icon">🚨</div>
+              <div className="stat-content">
+                <h3>{distressCount}</h3>
+                <p>Distress Signals</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/reports" style={{ textDecoration: 'none' }}>
+            <div className="stat-card" style={{ backgroundColor: '#F0AD4E' }}>
+              <div className="stat-icon">📝</div>
+              <div className="stat-content">
+                <h3>{reportCount}</h3>
+                <p>Reports</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/navigation" style={{ textDecoration: 'none' }}>
+            <div className="stat-card" style={{ backgroundColor: '#198754' }}>
+              <div className="stat-icon">🎯</div>
+              <div className="stat-content">
+                <h3>{zonesCount}</h3>
+                <p>Active Zones</p>
+              </div>
+            </div>
+          </Link>
+        </div>
       </Container>
+
+      <Container style={{ marginLeft: "7rem" }}>
+        <div className='charts-container' style={{ marginTop: "2rem" }}>
+          <div className='chart-card'>
+            <h4>Distress Signals Over Time</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={distressHistory}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="count" stroke="#D9534F" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className='chart-card'>
+            <h4>Reports by Location</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={reportsByLocation}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="location" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" fill="#F0AD4E" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className='chart-card'>
+            <h4>Zone Distribution</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={zoneDistribution}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#198754"
+                  label
+                />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </Container>
+
+      <style jsx>{`
+        .charts-container {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 2rem;
+          padding: 1rem;
+        }
+        .chart-card {
+          background: white;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h4 {
+          margin-bottom: 1rem;
+          color: #333;
+        }
+        .stats-container {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
+        .stat-card {
+          padding: 1.5rem;
+          border-radius: 8px;
+          color: white;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-icon {
+          font-size: 2rem;
+          margin-right: 1rem;
+        }
+        .stat-content h3 {
+          font-size: 1.8rem;
+          margin: 0;
+          font-weight: bold;
+        }
+        .stat-content p {
+          margin: 0;
+          font-size: 1rem;
+          opacity: 0.9;
+        }
+      `}</style>
     </>
   );
 };

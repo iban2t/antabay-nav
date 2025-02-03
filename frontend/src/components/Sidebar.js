@@ -1,52 +1,139 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { FaChartBar, FaMapMarkedAlt, FaAddressBook, FaMapMarkerAlt, FaBell, FaClipboardList, FaMap } from 'react-icons/fa';
 import "@trendmicro/react-sidenav/dist/react-sidenav.css";
-import SideNav, { NavItem, NavIcon, NavText } from "@trendmicro/react-sidenav";
-import dashboardIcon from '../assets/dashboard.svg';
-import navigateIcon from '../assets/navigation.svg';
-import contactsIcon from '../assets/contacts.svg';
-import freqLocIcon from '../assets/freqloc.svg';
-import distressIcon from '../assets/distress.svg';
-import reportsIcon from '../assets/reports.svg';
-import zonesIcon from '../assets/zones.svg';
 
-export default function Sidebar() {
-  const [isVisible, setVisible] = useState(false);
-  const location = useLocation(); // Get the current location
+const Sidebar = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const location = useLocation();
 
-  // Define array of navigation items
   const navItems = [
-    { key: 'dashboard', text: 'Dashboard', icon: dashboardIcon, link: '/dashboard' },
-    { key: 'navigation', text: 'Navigation',  icon: navigateIcon, link: '/navigation' },
-    { key: 'contacts', text: 'Contacts',  icon: contactsIcon, link: '/contacts' },
-    { key: 'freqLoc', text: 'Frequent Locations', icon: freqLocIcon, link: '/freqloc' },
-    { key: 'distress', text: 'Distress', icon: distressIcon, link: '/distress' },
-    { key: 'reports', text: 'Reports', icon: reportsIcon, link: '/reports' },
-    { key: 'zones', text: 'Zones', icon: zonesIcon, link: '/zones' }
+    { key: 'dashboard', text: 'Dashboard', icon: <FaChartBar />, link: '/dashboard' },
+    { key: 'navigation', text: 'Navigation', icon: <FaMapMarkedAlt />, link: '/navigation' },
+    { key: 'contacts', text: 'Contacts', icon: <FaAddressBook />, link: '/contacts' },
+    { key: 'freqLoc', text: 'Frequent Locations', icon: <FaMapMarkerAlt />, link: '/freqloc' },
+    { key: 'distress', text: 'Distress', icon: <FaBell />, link: '/distress' },
+    { key: 'reports', text: 'Reports', icon: <FaClipboardList />, link: '/reports' },
+    { key: 'zones', text: 'Zones', icon: <FaMap />, link: '/zones' }
   ];
 
   return (
-    <SideNav className="sidebar" defaultExpanded={isVisible} style={{ height: '100vh', position: 'fixed', left: 0 }}>
-      <SideNav.Toggle
-        onClick={() => {
-          setVisible(!isVisible);
-        }}
-      />
-      <SideNav.Nav>
-        {/* Map over the array of navigation items and render NavItem dynamically */}
+    <div className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
+      <button 
+        className="toggle-btn"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {isExpanded ? '◀' : '▶'}
+      </button>
+
+      <div className="nav-items">
         {navItems.map(({ key, text, icon, link }) => (
-          <NavItem key={key} eventKey={key} active={location.pathname === link}>
-            <NavIcon>
-              <Link to={link}>
-                <img src={icon} alt={text} style={{ width: '1.75em' }} />
-              </Link>
-            </NavIcon>
-            <NavText>
-              <Link to={link}>{text}</Link>
-            </NavText>
-          </NavItem>
+          <Link
+            key={key}
+            to={link}
+            className={`nav-item ${location.pathname === link ? 'active' : ''}`}
+            title={text}
+          >
+            <span className="icon">{icon}</span>
+            <span className="text">{text}</span>
+          </Link>
         ))}
-      </SideNav.Nav>
-    </SideNav>
+      </div>
+
+      <style jsx>{`
+        .sidebar {
+          position: fixed;
+          top: 69px;
+          left: 0;
+          height: calc(100vh - 69px);
+          background: #2a003a;
+          width: ${isExpanded ? '240px' : '64px'};
+          transition: all 0.3s ease;
+          box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+          z-index: 1000;
+          overflow-x: hidden;
+        }
+
+        .toggle-btn {
+          position: absolute;
+          right: -12px;
+          top: 20px;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 12px;
+          color: #666;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 1;
+          transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+          background: #f8f9fa;
+          transform: scale(1.1);
+        }
+
+        .nav-items {
+          padding: 1rem 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          padding: 0.75rem 1.5rem;
+          color: rgba(255, 255, 255, 0.8);
+          text-decoration: none;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+          overflow: hidden;
+        }
+
+        .nav-item:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+
+        .nav-item.active {
+          background: rgba(255, 255, 255, 0.15);
+          color: white;
+          border-right: 3px solid white;
+        }
+
+        .icon {
+          font-size: 1.2rem;
+          min-width: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .text {
+          margin-left: 1rem;
+          opacity: ${isExpanded ? '1' : '0'};
+          transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+          .sidebar {
+            width: ${isExpanded ? '200px' : '0px'};
+          }
+
+          .toggle-btn {
+            display: ${isExpanded ? 'flex' : 'none'};
+          }
+        }
+      `}</style>
+    </div>
   );
-}
+};
+
+export default Sidebar;

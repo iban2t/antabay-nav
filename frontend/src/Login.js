@@ -12,9 +12,13 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async (event) => {
         event.preventDefault();
+        setIsLoading(true);
+        setErrorMessage('');
+        
         try {
             const response = await axios.post(`${baseURL}/auth/login`, { 
                 username: username,
@@ -35,6 +39,8 @@ const Login = () => {
                 console.error('Login failed', error);
                 setErrorMessage("An unexpected error occurred");
             }
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -58,6 +64,7 @@ const Login = () => {
                             placeholder="Enter Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            disabled={isLoading}
                         />
                     </div>
         
@@ -70,6 +77,7 @@ const Login = () => {
                             placeholder="Enter Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            disabled={isLoading}
                         />
                     </div>
                     <div className="text-center">
@@ -78,9 +86,19 @@ const Login = () => {
                         <Button 
                             type="submit" 
                             className="loginButton" 
-                            style={{ backgroundColor: '#800080', color: 'white', border: 'none' }}
+                            style={{ 
+                                backgroundColor: '#800080', 
+                                color: 'white', 
+                                border: 'none',
+                                minWidth: '80px'
+                            }}
+                            disabled={isLoading}
                         >
-                            Login
+                            {isLoading ? (
+                                <div className="spinner-border spinner-border-sm" role="status">
+                                    <span className="visually-hidden">Loading...</span>
+                                </div>
+                            ) : 'Login'}
                         </Button>
                         <br />
                         <p className="mt-3">Don't have an account yet? <Link to="/signup">Sign Up</Link></p>
