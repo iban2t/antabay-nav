@@ -514,17 +514,17 @@ const MapComponent = () => {
 
             <View style={styles.buttonGroup}>
               <Button 
+                title="Submit" 
+                onPress={closeDistressModal} 
+                color="#800080" 
+              />
+              <Button 
                 title="Cancel" 
                 onPress={() => {
                   setDistressModalVisible(false);
                   setDistressInput('');
                 }} 
                 color="#999" 
-              />
-              <Button 
-                title="Submit" 
-                onPress={closeDistressModal} 
-                color="#800080" 
               />
             </View>
           </View>
