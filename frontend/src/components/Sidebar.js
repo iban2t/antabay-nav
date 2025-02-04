@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaChartBar, FaMapMarkedAlt, FaAddressBook, FaMapMarkerAlt, FaBell, FaClipboardList, FaMap } from 'react-icons/fa';
+import { FaChartBar, FaMapMarkedAlt, FaBell, FaClipboardList, FaUsers } from 'react-icons/fa';
 import "@trendmicro/react-sidenav/dist/react-sidenav.css";
 
 const Sidebar = () => {
@@ -10,11 +10,9 @@ const Sidebar = () => {
   const navItems = [
     { key: 'dashboard', text: 'Dashboard', icon: <FaChartBar />, link: '/dashboard' },
     { key: 'navigation', text: 'Navigation', icon: <FaMapMarkedAlt />, link: '/navigation' },
-    { key: 'contacts', text: 'Contacts', icon: <FaAddressBook />, link: '/contacts' },
-    { key: 'freqLoc', text: 'Frequent Locations', icon: <FaMapMarkerAlt />, link: '/freqloc' },
+    { key: 'users', text: 'Users', icon: <FaUsers />, link: '/users' },
     { key: 'distress', text: 'Distress', icon: <FaBell />, link: '/distress' },
-    { key: 'reports', text: 'Reports', icon: <FaClipboardList />, link: '/reports' },
-    { key: 'zones', text: 'Zones', icon: <FaMap />, link: '/zones' }
+    { key: 'reports', text: 'Reports', icon: <FaClipboardList />, link: '/reports' }
   ];
 
   return (
@@ -50,7 +48,7 @@ const Sidebar = () => {
           width: ${isExpanded ? '240px' : '64px'};
           transition: all 0.3s ease;
           box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-          z-index: 1000;
+          z-index: 1001;
           overflow-x: hidden;
         }
 
