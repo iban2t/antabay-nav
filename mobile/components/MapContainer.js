@@ -396,6 +396,41 @@ const MapComponent = () => {
     updateUserAddress();
   }, [userLocation]);
 
+  // Add generateZoneData function back
+  const generateZoneData = () => {
+    return zones.map(zone => {
+      const location = locations.find(loc => 
+        loc.name.toLowerCase() === zone.location_name.toLowerCase()
+      );
+      
+      if (location && location.coordinates) {
+        // Ensure we have valid numbers for the counts
+        const distressCount = parseInt(zone.distress_count) || 0;
+        const reportCount = parseInt(zone.report_count) || 0;
+        const totalCount = distressCount + reportCount;
+        
+        // Calculate opacity
+        const baseOpacity = 0.1;
+        const maxOpacity = 0.5;
+        const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
+
+        return {
+          id: zone.id,
+          name: zone.location_name,
+          type: zone.type,
+          distressCount: distressCount,
+          reportCount: reportCount,
+          opacity: opacity,
+          coordinate: {
+            latitude: parseFloat(location.coordinates.x),
+            longitude: parseFloat(location.coordinates.y)
+          }
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -424,60 +459,41 @@ const MapComponent = () => {
           </Marker>
         )}
 
-        {showZones && zones.map(zone => {
-          const location = locations.find(loc => 
-            loc.name.toLowerCase() === zone.location_name.toLowerCase()
-          );
-          if (location && location.coordinates) {
-            const totalCount = zone.distress_count + zone.report_count;
-            const baseOpacity = 0.1;
-            const maxOpacity = 0.5;
-            const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
-
-            return (
-              <React.Fragment key={zone.id}>
-                <Circle
-                  center={{
-                    latitude: parseFloat(location.coordinates.x),
-                    longitude: parseFloat(location.coordinates.y)
-                  }}
-                  radius={100}
-                  fillColor={
-                    zone.type === 'Danger Zone' 
-                      ? `rgba(255, 0, 0, ${opacity})`
-                      : `rgba(0, 255, 0, ${opacity})`
-                  }
-                  strokeColor={
-                    zone.type === 'Danger Zone'
-                      ? `rgba(255, 0, 0, ${opacity + 0.2})`
-                      : `rgba(0, 255, 0, ${opacity + 0.2})`
-                  }
-                  strokeWidth={2}
-                />
-                <Marker
-                  coordinate={{
-                    latitude: parseFloat(location.coordinates.x),
-                    longitude: parseFloat(location.coordinates.y)
-                  }}
-                  opacity={0}
-                >
-                  <Callout>
-                    <View style={styles.calloutContainer}>
-                      <Text style={styles.calloutTitle}>{zone.location_name}</Text>
-                      <Text style={styles.calloutText}>
-                        Distress Signals: {zone.distress_count}
-                      </Text>
-                      <Text style={styles.calloutText}>
-                        Reports: {zone.report_count}
-                      </Text>
-                    </View>
-                  </Callout>
-                </Marker>
-              </React.Fragment>
-            );
-          }
-          return null;
-        })}
+        {showZones && generateZoneData().map(zoneData => (
+          <React.Fragment key={zoneData.id}>
+            <Circle
+              center={zoneData.coordinate}
+              radius={100}
+              fillColor={
+                zoneData.type === 'Danger Zone'
+                  ? `rgba(255, 0, 0, ${zoneData.opacity})`
+                  : `rgba(0, 255, 0, ${zoneData.opacity})`
+              }
+              strokeColor={
+                zoneData.type === 'Danger Zone'
+                  ? `rgba(255, 0, 0, ${zoneData.opacity + 0.2})`
+                  : `rgba(0, 255, 0, ${zoneData.opacity + 0.2})`
+              }
+              strokeWidth={2}
+            />
+            <Marker
+              coordinate={zoneData.coordinate}
+              opacity={0}
+            >
+              <Callout>
+                <View style={styles.calloutContainer}>
+                  <Text style={styles.calloutTitle}>{zoneData.name}</Text>
+                  <Text style={styles.calloutText}>
+                    Distress Signals: {zoneData.distressCount}
+                  </Text>
+                  <Text style={styles.calloutText}>
+                    Reports: {zoneData.reportCount}
+                  </Text>
+                </View>
+              </Callout>
+            </Marker>
+          </React.Fragment>
+        ))}
       </MapView>
 
       {/* Distress Log Modal */}
@@ -514,17 +530,17 @@ const MapComponent = () => {
 
             <View style={styles.buttonGroup}>
               <Button 
-                title="Submit" 
-                onPress={closeDistressModal} 
-                color="#800080" 
-              />
-              <Button 
                 title="Cancel" 
                 onPress={() => {
                   setDistressModalVisible(false);
                   setDistressInput('');
                 }} 
                 color="#999" 
+              />
+              <Button 
+                title="Submit" 
+                onPress={closeDistressModal} 
+                color="#800080" 
               />
             </View>
           </View>

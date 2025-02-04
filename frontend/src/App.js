@@ -10,6 +10,7 @@ import FreqLoc from './FreqLoc';
 import Distress from './Distress';
 import Reports from './Reports'
 import Zones from './Zones';
+import Users from './Users';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/distress/" element={<Distress />} />
         <Route path="/reports/" element={<Reports />} />
         <Route path="/zones/" element={<Zones />} />
+        <Route path="/users/" element={<Users />} />
       </Routes>
     </Router>
   );

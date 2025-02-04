@@ -68,62 +68,86 @@ function MapComponent() {
           loc.name.toLowerCase() === zone.location_name.toLowerCase()
         );
         if (location && location.coordinates) {
-          return {
-            type: 'Feature',
-            properties: {
-              name: zone.location_name,
-              distressCount: zone.distress_count || 0,
-              reportCount: zone.report_count || 0,
-              intensity: (zone.distress_count || 0) + (zone.report_count || 0)
-            },
-            geometry: {
-              type: 'Point',
-              // Fix coordinate order: [longitude, latitude]
-              coordinates: [parseFloat(location.coordinates.y), parseFloat(location.coordinates.x)]
-            }
-          };
+          // Ensure we have valid numbers for the counts
+          const distressCount = parseInt(zone.distress_count) || 0;
+          const reportCount = parseInt(zone.report_count) || 0;
+          const totalCount = distressCount + reportCount;
+          
+          // Calculate opacity
+          const baseOpacity = 0.1;
+          const maxOpacity = 0.5;
+          const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
+
+          // Parse coordinates and ensure they're in the correct order (longitude, latitude)
+          const longitude = parseFloat(location.coordinates.y);
+          const latitude = parseFloat(location.coordinates.x);
+
+          // Only create feature if coordinates are valid numbers
+          if (!isNaN(longitude) && !isNaN(latitude)) {
+            return {
+              type: 'Feature',
+              properties: {
+                name: zone.location_name,
+                distressCount: distressCount,
+                reportCount: reportCount,
+                totalCount: totalCount,
+                opacity: opacity,
+                zoneType: zone.type
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [longitude, latitude] // Mapbox expects [longitude, latitude]
+              }
+            };
+          }
         }
         return null;
       }).filter(Boolean)
     };
   };
 
-  // Circle layer style instead of heatmap
+  // Circle layer style
   const circleLayer = {
     id: 'zones',
     type: 'circle',
     paint: {
-      'circle-radius': [
-        'interpolate', ['linear'], ['get', 'intensity'],
-        0, 20,
-        10, 40
+      'circle-radius': 50,
+      'circle-color': [
+        'case',
+        ['==', ['get', 'zoneType'], 'Danger Zone'],
+        '#ff0000',
+        '#00ff00'
       ],
-      'circle-color': '#ff0000',
-      'circle-opacity': 0.3,
+      'circle-opacity': ['get', 'opacity'],
       'circle-stroke-width': 2,
-      'circle-stroke-color': '#ff0000'
+      'circle-stroke-color': [
+        'case',
+        ['==', ['get', 'zoneType'], 'Danger Zone'],
+        'rgba(255, 0, 0, 0.7)',
+        'rgba(0, 255, 0, 0.7)'
+      ]
     }
   };
 
-  // Add hover handlers
+  // Update the handleZoneHover function
   const handleZoneHover = (event) => {
-    if (event.features && event.features.length > 0) {
+    if (event && event.features && event.features.length > 0) {
       const feature = event.features[0];
-      const { coordinates } = feature.geometry;
-      const { name, distressCount, reportCount } = feature.properties;
-      
-      setCursorPosition({
-        x: event.point.x,
-        y: event.point.y
-      });
-      
-      setHoveredZone({
-        longitude: coordinates[0],
-        latitude: coordinates[1],
-        name,
-        distressCount,
-        reportCount
-      });
+      if (feature.geometry && feature.geometry.coordinates) {
+        const { coordinates } = feature.geometry;
+        const { name, distressCount, reportCount } = feature.properties;
+        
+        // Only set hoveredZone if we have valid coordinates
+        if (coordinates && coordinates.length === 2) {
+          setHoveredZone({
+            longitude: coordinates[0],
+            latitude: coordinates[1],
+            name,
+            distressCount,
+            reportCount
+          });
+        }
+      }
     } else {
       setHoveredZone(null);
     }
@@ -166,6 +190,54 @@ function MapComponent() {
       }
     };
   }, []);
+
+  // Add this after the state declarations
+  const fetchLocations = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${config.REACT_APP_API_BASE_URL}/nav/loc`, {
+        headers: { Authorization: token }
+      });
+      setLocations(response.data);
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    }
+  };
+
+  // Add this useEffect to fetch locations when component mounts
+  useEffect(() => {
+    fetchLocations();
+  }, []);
+
+  // Function to fetch zones
+  const fetchZones = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${config.REACT_APP_API_BASE_URL}/zones/zones`, {
+        headers: { Authorization: token }
+      });
+      
+      // Use Set to get unique location names for debugging
+      const uniqueZones = [...new Set(response.data.zones.map(zone => zone.location_name))];
+      console.log('Danger Zones:', uniqueZones);
+      
+      setZones(response.data.zones || []);
+      
+      // Fetch locations if we don't have them yet
+      if (locations.length === 0) {
+        fetchLocations();
+      }
+    } catch (error) {
+      console.error('Error fetching zones:', error);
+    }
+  };
+
+  // Add useEffect to fetch zones when toggle is on
+  useEffect(() => {
+    if (showZones) {
+      fetchZones();
+    }
+  }, [showZones]);
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -234,19 +306,19 @@ function MapComponent() {
           </Popup>
         )}
 
-        {hoveredZone && cursorPosition && (
-          <div 
-            className="hover-popup"
-            style={{
-              position: 'absolute',
-              left: cursorPosition.x + 10,
-              top: cursorPosition.y + 10,
-            }}
+        {hoveredZone && (
+          <Popup
+            latitude={hoveredZone.latitude}
+            longitude={hoveredZone.longitude}
+            closeButton={false}
+            closeOnClick={false}
           >
-            <h4>{hoveredZone.name}</h4>
-            <p>Distress Signals: {hoveredZone.distressCount}</p>
-            <p>Reports: {hoveredZone.reportCount}</p>
-          </div>
+            <div className="popup-content">
+              <h3>{hoveredZone.name}</h3>
+              <p>Distress Signals: {hoveredZone.distressCount}</p>
+              <p>Reports: {hoveredZone.reportCount}</p>
+            </div>
+          </Popup>
         )}
       </ReactMapGL>
 
