@@ -21,7 +21,7 @@ const TopNavigation = () => {
 
   return (
     <Navbar className="top-nav" variant="dark" expand="lg">
-      <Container fluid>
+      <Container fluid className="px-0">
         <Navbar.Brand href="dashboard" className="brand">
           <span className="brand-text">Antabay</span>
           <span className="brand-subtitle">Admin Dashboard</span>
@@ -46,16 +46,22 @@ const TopNavigation = () => {
       <style>{`
         .top-nav {
           background: linear-gradient(90deg, #2a003a 0%, #800080 100%);
-          padding: 0.5rem 1rem;
+          padding: 0.5rem 0;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           z-index: 999;
+          width: 100%;
+          margin: 0;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
         }
 
         .brand {
           display: flex;
           flex-direction: column;
           line-height: 1;
-          margin-left: 3rem;
+          margin-left: 1rem;
         }
 
         .brand-text {

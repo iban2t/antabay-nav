@@ -129,27 +129,18 @@ const Users = () => {
         <TopNavigation />
         <Sidebar />
 
-        <br />
-        <div style={{ 
-          marginLeft: "6rem",
-          marginRight: "2rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
+        <div className='page-header'>
           <h3>Users Management</h3>
           <Button variant="success" onClick={handleAdd}>Add User</Button>
         </div>
-        <br />
-        <br />
-        <Container className='table'>
+
+        <Container className='table-container'>
           {alert && (
             <Alert variant={alert.type} className="mb-4">
               {alert.message}
             </Alert>
           )}
-
-          <Table striped bordered hover>
+          <Table striped bordered hover responsive>
             <thead>
               <tr>
                 <th>Name</th>
@@ -275,6 +266,64 @@ const Users = () => {
           </Form>
         </Modal.Body>
       </Modal>
+
+      <style jsx>{`
+        .page-header {
+          padding: 1rem 0;
+          margin-top: 4rem;
+          margin-left: 6rem;
+          margin-right: 2rem;
+          border-bottom: 1px solid #eee;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .page-header h3 {
+          margin: 0;
+          color: #333;
+          font-size: 1.75rem;
+          font-weight: 500;
+        }
+
+        .table-container {
+          margin-top: 2rem;
+          margin-left: 6rem;
+          margin-right: 2rem;
+          overflow-x: auto;
+        }
+
+        @media (max-width: 768px) {
+          .page-header {
+            margin-left: 4rem;
+            padding: 0.75rem 1rem;
+          }
+
+          .page-header h3 {
+            font-size: 1.5rem;
+          }
+
+          .table-container {
+            margin-left: 4rem;
+            margin-right: 1rem;
+            padding: 0 1rem;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .page-header {
+            margin-left: 1rem;
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .table-container {
+            margin-left: 1rem;
+            margin-right: 1rem;
+            padding: 0;
+          }
+        }
+      `}</style>
     </>
   );
 };

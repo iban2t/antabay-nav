@@ -104,8 +104,8 @@ const Dashboard = () => {
       <TopNavigation />
       <Sidebar />
 
-      <div className='pageHeader'>
-        <h3 style={{ marginLeft: "6rem" }}>Dashboard</h3>
+      <div className='page-header'>
+        <h3>Dashboard</h3>
       </div>
 
       <Container style={{ marginLeft: "7rem", marginTop: "2rem" }}>
@@ -202,28 +202,44 @@ const Dashboard = () => {
       </Container>
 
       <style jsx>{`
+        .page-header {
+          padding: 1rem 0;
+          margin-top: 4rem;
+          margin-left: 6rem;
+          border-bottom: 1px solid #eee;
+        }
+
+        .page-header h3 {
+          margin: 0;
+          color: #333;
+          font-size: 1.75rem;
+          font-weight: 500;
+        }
+
         .charts-container {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
           gap: 2rem;
           padding: 1rem;
+          width: 100%;
         }
+        
         .chart-card {
           background: white;
           padding: 1rem;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          min-height: 350px;
         }
-        h4 {
-          margin-bottom: 1rem;
-          color: #333;
-        }
+        
         .stats-container {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 1rem;
           margin-bottom: 2rem;
+          width: 100%;
         }
+        
         .stat-card {
           padding: 1.5rem;
           border-radius: 8px;
@@ -231,20 +247,68 @@ const Dashboard = () => {
           display: flex;
           align-items: center;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          transition: transform 0.2s ease;
         }
+        
+        .stat-card:hover {
+          transform: translateY(-5px);
+        }
+        
         .stat-icon {
           font-size: 2rem;
           margin-right: 1rem;
         }
+        
         .stat-content h3 {
-          font-size: 1.8rem;
+          font-size: clamp(1.5rem, 3vw, 1.8rem);
           margin: 0;
           font-weight: bold;
         }
+        
         .stat-content p {
           margin: 0;
-          font-size: 1rem;
+          font-size: clamp(0.875rem, 2vw, 1rem);
           opacity: 0.9;
+        }
+
+        @media (min-width: 992px) {
+          .stats-container {
+            grid-template-columns: repeat(4, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .page-header {
+            margin-left: 4rem;
+            padding: 0.75rem 1rem;
+          }
+
+          .page-header h3 {
+            font-size: 1.5rem;
+          }
+
+          .stats-container {
+            padding: 0 1rem;
+          }
+          
+          .stat-card {
+            padding: 1rem;
+          }
+          
+          .stat-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .page-header {
+            margin-left: 1rem;
+          }
+
+          .charts-container {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </>

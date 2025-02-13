@@ -25,34 +25,89 @@ function Distress() {
             <TopNavigation/>
             <Sidebar/>
 
-            <br></br>
-            <h3 style={{
-                    marginLeft: "6rem"
-                    }}>Distress</h3>
-            <br></br>
-              <Container className='table'>
-                <Table striped bordered hover>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Description</th>
-                      <th>Date/Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {
-                      data.map((distress, index) => {
-                        return <tr key={index}>
-                          <td>{distress.id}</td>
-                          <td>{distress.description}</td>
-                          <td>{distress.distress_at}</td>
+            <div className='page-header'>
+                <h3>Distress</h3>
+            </div>
+
+            <Container className='table-container'>
+                <Table striped bordered hover responsive>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Description</th>
+                            <th>Date/Time</th>
                         </tr>
-                      })
-                    }
-                  </tbody>
+                    </thead>
+                    <tbody>
+                        {
+                            data.map((distress, index) => {
+                                return <tr key={index}>
+                                    <td>{distress.id}</td>
+                                    <td>{distress.description}</td>
+                                    <td>{distress.distress_at}</td>
+                                </tr>
+                            })
+                        }
+                    </tbody>
                 </Table>
-              </Container>
-      </div>
+            </Container>
+
+            <style jsx>{`
+                .page-header {
+                    padding: 1rem 0;
+                    margin-top: 4rem;
+                    margin-left: 6rem;
+                    border-bottom: 1px solid #eee;
+                }
+
+                .page-header h3 {
+                    margin: 0;
+                    color: #333;
+                    font-size: 1.75rem;
+                    font-weight: 500;
+                }
+
+                @media (max-width: 768px) {
+                    .page-header {
+                        margin-left: 4rem;
+                        padding: 0.75rem 1rem;
+                    }
+
+                    .page-header h3 {
+                        font-size: 1.5rem;
+                    }
+                }
+
+                @media (max-width: 576px) {
+                    .page-header {
+                        margin-left: 1rem;
+                    }
+                }
+
+                .table-container {
+                    margin-top: 2rem;
+                    margin-left: 6rem;
+                    margin-right: 2rem;
+                    overflow-x: auto;
+                }
+
+                @media (max-width: 768px) {
+                    .table-container {
+                        margin-left: 4rem;
+                        margin-right: 1rem;
+                        padding: 0 1rem;
+                    }
+                }
+
+                @media (max-width: 576px) {
+                    .table-container {
+                        margin-left: 1rem;
+                        margin-right: 1rem;
+                        padding: 0;
+                    }
+                }
+            `}</style>
+        </div>
     </>
   )
 }
