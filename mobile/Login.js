@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
@@ -17,40 +17,41 @@ const Login = () => {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
-    setIsLoading(true);
+    if (!username || !password) {
+        Alert.alert('Error', 'Please fill in all fields');
+        return;
+    }
 
     try {
-      const response = await axios.post(`${config.API_BASE_URL}/auth/login`, {
-        username,
-        password,
-      });
-  
-      const { token } = response.data;
-      console.log('Token:', token);
-  
-      if (token) {
-        const decodedToken = JSON.parse(decode(token.split('.')[1]));
-        console.log('Decoded token:', decodedToken);
-  
+        setIsLoading(true);
+        const response = await axios.post(`${config.API_BASE_URL}/auth/login`, {
+            username,
+            password
+        });
+
+        console.log('Login successful:', response.data);
+        const token = response.data.token;
+        const userId = response.data.id;
+
+        // Store auth data
         await AsyncStorage.setItem('token', token);
-  
-        navigation.navigate('Main');
-      } else {
-        throw new Error('Token is undefined');
-      }
+        await AsyncStorage.setItem('userId', userId.toString());
+        await AsyncStorage.setItem('username', username);
+
+        // Navigate to main app
+        navigation.replace('Main');
+
     } catch (error) {
-      if (error.response) {
-        console.error('Error response:', error.response);
-        setErrorMessage(error.response.data.message || 'Login failed');
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-        setErrorMessage('Server unreachable. Check your connection.');
-      } else {
-        console.error('Error message:', error.message);
-        setErrorMessage('An unexpected error occurred.');
-      }
+        console.error('Login error:', error);
+        let errorMessage = 'An error occurred during login';
+        
+        if (error.response) {
+            errorMessage = error.response.data.message || error.response.data.error || errorMessage;
+        }
+        
+        Alert.alert('Login Failed', errorMessage);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };  
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, FlatList, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, Button, FlatList, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView, Picker } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -90,50 +90,102 @@ const Contacts = () => {
         setEditContactId(null);
     };
 
-    const handleContactFormChange = (name, value) => {
-        setContactFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+    // Add phone number formatting function
+    const formatPhilippineNumber = (number) => {
+        // Remove all non-numeric characters
+        let cleaned = number.replace(/\D/g, '');
+        
+        // Remove leading 0 if present
+        if (cleaned.startsWith('0')) {
+            cleaned = cleaned.substring(1);
+        }
+        
+        // Remove +63 if present at the start
+        if (cleaned.startsWith('63')) {
+            cleaned = cleaned.substring(2);
+        }
+        
+        // Add +63 prefix
+        return cleaned ? `+63${cleaned}` : '';
     };
 
+    // Update handleContactFormChange for phone number
+    const handleContactFormChange = (name, value) => {
+        if (name === 'num') {
+            // Format phone number as user types
+            const formattedNumber = formatPhilippineNumber(value);
+            setContactFormData(prev => ({
+                ...prev,
+                [name]: formattedNumber
+            }));
+        } else {
+            setContactFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+    };
+
+    // Update handleSaveContact validation
     const handleSaveContact = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
-    
-            // Ensure empty strings in the username field are set to null
+
+            // Validate required fields
+            if (!contactFormData.name || !contactFormData.type) {
+                Alert.alert('Error', 'Please fill in all required fields');
+                return;
+            }
+
+            // Validate phone number
+            const phoneNumber = contactFormData.num.replace(/\D/g, '');
+            if (!phoneNumber.match(/^63\d{10}$/)) {
+                Alert.alert(
+                    'Invalid Phone Number', 
+                    'Please enter a valid Philippine mobile number\n(e.g., +63 999 999 9999)'
+                );
+                return;
+            }
+
             const processedContactData = {
                 ...contactFormData,
-                username: contactFormData.username === '' ? null : contactFormData.username,
+                num: contactFormData.num, // Already formatted
+                username: contactFormData.username || null
             };
-    
+
+            let response;
             if (editContactId) {
-                // Update existing contact
-                await axios.put(`${config.API_BASE_URL}/users/contacts/${editContactId}`, processedContactData, {
-                    headers: { Authorization: token }
-                });
+                response = await axios.put(
+                    `${config.API_BASE_URL}/users/contacts/${editContactId}`, 
+                    processedContactData,
+                    { headers: { Authorization: token } }
+                );
+                Alert.alert('Success', 'Contact updated successfully!');
             } else {
-                // Add new contact
-                await axios.post(`${config.API_BASE_URL}/users/contacts/add`, processedContactData, {
-                    headers: { Authorization: token }
-                });
+                response = await axios.post(
+                    `${config.API_BASE_URL}/users/contacts/add`, 
+                    processedContactData,
+                    { headers: { Authorization: token } }
+                );
+                Alert.alert('Success', 'Contact added successfully!');
             }
-    
-            // Fetch updated contacts
+
+            // Refresh contacts list
             const res = await axios.get(`${config.API_BASE_URL}/users/contacts`, {
                 headers: { Authorization: token }
             });
             const sortedData = res.data.sort((a, b) => a.name.localeCompare(b.name));
             setData(sortedData);
-    
-            // Show success alert
-            Alert.alert('Success', editContactId ? 'Contact updated successfully!' : 'Contact registered successfully!');
-            
-            // Close modals
+
+            // Close modals and reset form
             handleCloseCreateModal();
             handleCloseEditModal();
         } catch (error) {
-            console.error('Error saving contact:', error);
+            console.error('Error saving contact:', error.response?.data || error);
+            Alert.alert(
+                'Error',
+                error.response?.data?.error || 'Failed to save contact. Please try again.'
+            );
         }
     };
     
@@ -184,6 +236,9 @@ const Contacts = () => {
         const index = name.charCodeAt(0) % colors.length;
         return colors[index];
     };
+
+    // Add contact type options
+    const contactTypes = ['Family', 'Friend', 'Authority', 'Others'];
 
     return (
         <View style={styles.container}>
@@ -250,9 +305,11 @@ const Contacts = () => {
                         />
                         <TextInput
                             style={styles.input}
-                            placeholder="Number"
+                            placeholder="+63 999 999 9999"
                             value={contactFormData.num}
                             onChangeText={(text) => handleContactFormChange('num', text)}
+                            keyboardType="phone-pad"
+                            maxLength={13}
                         />
                         <TextInput
                             style={styles.input}
@@ -289,24 +346,44 @@ const Contacts = () => {
                         />
                         <TextInput
                             style={styles.input}
-                            placeholder="Number"
+                            placeholder="+63 999 999 9999"
                             value={contactFormData.num}
                             onChangeText={(text) => handleContactFormChange('num', text)}
+                            keyboardType="phone-pad"
+                            maxLength={13}
                         />
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={contactFormData.type}
+                                style={styles.picker}
+                                onValueChange={(value) => handleContactFormChange('type', value)}
+                            >
+                                <Picker.Item label="Select Type" value="" />
+                                {contactTypes.map((type) => (
+                                    <Picker.Item key={type} label={type} value={type} />
+                                ))}
+                            </Picker>
+                        </View>
                         <TextInput
                             style={styles.input}
-                            placeholder="Type"
-                            value={contactFormData.type}
-                            onChangeText={(text) => handleContactFormChange('type', text)}
-                        />
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Username"
-                            value={contactFormData.username}
+                            placeholder="Username (optional)"
+                            value={contactFormData.username || ''}
                             onChangeText={(text) => handleContactFormChange('username', text)}
                         />
-                        <Button title="Update Contact" onPress={handleSaveContact} color="#800080" />
-                        <Button title="Close" onPress={handleCloseEditModal} color="grey" />
+                        <View style={styles.buttonGroup}>
+                            <TouchableOpacity 
+                                style={[styles.button, styles.saveButton]} 
+                                onPress={handleSaveContact}
+                            >
+                                <Text style={styles.buttonText}>Save Changes</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.button, styles.cancelButton]} 
+                                onPress={handleCloseEditModal}
+                            >
+                                <Text style={styles.buttonText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -469,6 +546,37 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         paddingHorizontal: 8,
         marginBottom: 12,
+    },
+    pickerContainer: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 4,
+        marginBottom: 12,
+    },
+    picker: {
+        height: 40,
+    },
+    buttonGroup: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
+    button: {
+        padding: 10,
+        borderRadius: 5,
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    saveButton: {
+        backgroundColor: '#800080',
+    },
+    cancelButton: {
+        backgroundColor: 'grey',
+    },
+    buttonText: {
+        color: 'white',
+        textAlign: 'center',
+        fontWeight: 'bold',
     },
 });
 

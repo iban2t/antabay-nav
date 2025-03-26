@@ -27,9 +27,16 @@ exports.addLoc = async (req, res) => {
 // Get all locations
 exports.allLocs = async (req, res) => {
   try {
-    const userId = req.userId;
-    const getAllLocationsQuery = "SELECT * FROM location WHERE user_id = ?";
-    const [locations] = await db.execute(getAllLocationsQuery, [userId]);
+    // Modified query to get all locations with proper coordinate extraction
+    const getAllLocationsQuery = `
+      SELECT 
+        id, 
+        name,
+        ST_X(coordinates) as latitude,
+        ST_Y(coordinates) as longitude
+      FROM location 
+      ORDER BY name`;
+    const [locations] = await db.execute(getAllLocationsQuery);
 
     res.json(locations);
   } catch (error) {
@@ -42,10 +49,15 @@ exports.allLocs = async (req, res) => {
 exports.getLoc = async (req, res) => {
   try {
     const locationId = req.params.id;
-    const userId = req.userId;
-    const getLocationQuery =
-      "SELECT * FROM location WHERE id = ? AND user_id = ?";
-    const [location] = await db.execute(getLocationQuery, [locationId, userId]);
+    const getLocationQuery = `
+      SELECT 
+        id, 
+        name,
+        ST_X(coordinates) as latitude,
+        ST_Y(coordinates) as longitude
+      FROM location 
+      WHERE id = ?`;
+    const [location] = await db.execute(getLocationQuery, [locationId]);
 
     if (location.length === 0) {
       return res.status(404).json({ error: "Location not found" });

@@ -5,6 +5,57 @@ import config from '../config';
 import markerIcon from '../assets/marker.png';
 import axios from 'axios';
 
+const POLICE_STATIONS = [
+  {
+    id: 'ps1',
+    name: 'Naga City Police Station 1 (Central Police Station)',
+    latitude: 13.6196,
+    longitude: 123.1944
+  },
+  {
+    id: 'ps2',
+    name: 'Naga City Police Station 2 (Tinago)',
+    latitude: 13.6252,
+    longitude: 123.1965
+  },
+  {
+    id: 'ps3',
+    name: 'Naga City Police Station 3 (Concepcion Pequeña)',
+    latitude: 13.6334,
+    longitude: 123.1927
+  },
+  {
+    id: 'ps4',
+    name: 'Naga City Police Station 4 (San Felipe)',
+    latitude: 13.6177,
+    longitude: 123.1833
+  },
+  {
+    id: 'ps5',
+    name: 'Naga City Police Station 5 (Pacol)',
+    latitude: 13.6486,
+    longitude: 123.2144
+  },
+  {
+    id: 'ps6',
+    name: 'Naga City Police Station 6 (Concepcion Grande)',
+    latitude: 13.6269,
+    longitude: 123.2016
+  },
+  {
+    id: 'ps7',
+    name: 'Naga City Police Station 7 (Tabuco)',
+    latitude: 13.6205,
+    longitude: 123.2001
+  },
+  {
+    id: 'ps8',
+    name: 'Naga City Police Office Headquarters',
+    latitude: 13.6198,
+    longitude: 123.1947
+  }
+];
+
 function MapComponent() {
   const [userLocation, setUserLocation] = useState(null);
   const [viewport, setViewport] = useState({
@@ -288,6 +339,36 @@ function MapComponent() {
           </Source>
         )}
 
+        {/* Police Station Markers */}
+        {POLICE_STATIONS.map(station => (
+          <Marker
+            key={station.id}
+            latitude={station.latitude}
+            longitude={station.longitude}
+            anchor="center"
+          >
+            <div 
+              style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#007BFF',
+                border: '2px solid white',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}
+              onClick={() => {
+                setSelectedLocation({
+                  latitude: station.latitude,
+                  longitude: station.longitude,
+                  name: station.name,
+                  type: 'police'
+                });
+              }}
+            />
+          </Marker>
+        ))}
+
         {selectedLocation && (
           <Popup
             latitude={selectedLocation.latitude}
@@ -299,8 +380,10 @@ function MapComponent() {
           >
             <div className="popup-content">
               <h3>{selectedLocation.name}</h3>
-              {selectedLocation.address && (
-                <p>{selectedLocation.address}</p>
+              {selectedLocation.type === 'police' ? (
+                <p>Police Station</p>
+              ) : (
+                selectedLocation.address && <p>{selectedLocation.address}</p>
               )}
             </div>
           </Popup>

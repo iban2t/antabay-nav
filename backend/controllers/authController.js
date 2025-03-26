@@ -76,7 +76,7 @@ exports.loginUser = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-      const getUserQuery = "SELECT * FROM users WHERE username = ?";
+      const getUserQuery = "SELECT id, username, password, role_id FROM users WHERE username = ?";
       const connection = await db;
       const [rows] = await connection.query(getUserQuery, [username]);
 
@@ -86,6 +86,8 @@ exports.loginUser = async (req, res) => {
       }
 
       const user = rows[0];
+      console.log('Found user:', { id: user.id, username: user.username, role_id: user.role_id });
+
       const passwordMatch = await bcrypt.compare(password, user.password);
 
       if (!passwordMatch) {
@@ -93,13 +95,25 @@ exports.loginUser = async (req, res) => {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
+      // Each user gets their own unique token
       const token = jwt.sign(
         { userId: user.id, username: user.username },
-        secret_key,
-        { expiresIn: "1h" }
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
       );
 
-      res.status(200).json({ token, id: user.id });
+      // Send response with both token and user data
+      const response = { 
+        token, 
+        id: user.id,
+        role: user.role_id,
+        roleId: user.role_id,
+        username: user.username
+      };
+      console.log('Sending response:', response);
+
+      res.status(200).json(response);
+
     } catch (error) {
       console.error("Error getting user from database:", error);
       res.status(500).json({ error: "Internal Server Error" });

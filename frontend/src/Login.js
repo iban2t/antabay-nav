@@ -20,27 +20,85 @@ const Login = () => {
         setErrorMessage('');
         
         try {
-            const response = await axios.post(`${baseURL}/auth/login`, { 
-                username: username,
-                password: password,
+            console.log('Attempting login with:', { username });
+
+            // First get the token
+            const loginResponse = await axios.post(`${baseURL}/auth/login`, {
+                username,
+                password
             });
 
-            const token = response.data.token;
-            localStorage.setItem('token', token);
+            console.log('Login response:', loginResponse.data);
 
-            const decodedToken = jwtDecode(token);
-            localStorage.setItem('username', decodedToken.username);
+            const token = loginResponse.data.token;
+            const userId = loginResponse.data.id;
+            
+            // Then fetch user details including role
+            const userResponse = await axios.get(
+                `${baseURL}/users/users/${userId}`,
+                { headers: { Authorization: token } }
+            );
+
+            console.log('User details:', userResponse.data);
+            const roleId = Number(userResponse.data.role_id);
+
+            if (isNaN(roleId)) {
+                console.error('Invalid role value:', userResponse.data);
+                setErrorMessage("Error: Invalid role value. Please contact administrator.");
+                return;
+            }
+
+            // Only allow admin (1), authority (2), and PSO (4) roles
+            const allowedRoles = [1, 2, 4];
+            console.log('Checking if role', roleId, 'is in', allowedRoles);
+            console.log('includes check result:', allowedRoles.includes(roleId));
+
+            if (!allowedRoles.includes(roleId)) {
+                console.log('Access denied for role:', roleId);
+                setErrorMessage("Access denied. This platform is only accessible to administrators, authorities, and Public Safety Officers.");
+                return;
+            }
+
+            console.log('Access granted for role:', roleId);
+
+            // Store auth data
+            localStorage.setItem('token', token);
+            localStorage.setItem('username', username);
+            localStorage.setItem('roleId', roleId);
+
+            await setUserOnline(token);
 
             navigate("/dashboard");
+
         } catch (error) {
-            if (error.response && error.response.status === 401) {
-                setErrorMessage("Wrong Username or Password");
+            console.error('Login error:', error);
+            console.error('Full error object:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            
+            if (error.response) {
+                setErrorMessage(error.response.data?.message || "Invalid username or password");
+            } else if (error.request) {
+                setErrorMessage('No response from server. Please try again.');
             } else {
-                console.error('Login failed', error);
-                setErrorMessage("An unexpected error occurred");
+                setErrorMessage('An error occurred. Please try again.');
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const setUserOnline = async (token) => {
+        try {
+            await axios.post(
+                `${baseURL}/users/status`,
+                { status: 'online' },
+                { headers: { Authorization: token } }
+            );
+        } catch (error) {
+            console.error('Failed to update online status:', error);
         }
     };
 
@@ -50,8 +108,8 @@ const Login = () => {
         }}>
             <div className="bg-white p-4 w-25" style={{ border: '2px solid black', borderRadius: '8px' }}>
                 <div className="text-center">
-                    <h2>Antabay Login</h2>
-                    <p>Please enter your username and password</p>
+                    <h2>Antabay Admin Login</h2>
+                    <p>Administrator, Authority, and Public Safety Office Access Only</p>
                 </div>
         
                 <form onSubmit={handleLogin}>

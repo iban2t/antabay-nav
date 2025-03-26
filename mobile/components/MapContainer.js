@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Image, Button, Alert, Modal, Text, TextInput, Switch } from 'react-native';
+import { View, StyleSheet, Image, Button, Alert, Modal, Text, TextInput, Switch, Platform } from 'react-native';
 import MapView, { Marker, Circle, Callout } from 'react-native-maps';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
@@ -8,6 +8,59 @@ import distressIcon from '../assets/distress.png';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import config from '../config';
+import SendSMS from 'react-native-sms';
+import { decode } from 'base-64';
+
+const POLICE_STATIONS = [
+  {
+    id: 'ps1',
+    name: 'Naga City Police Station 1 (Central)',
+    latitude: 13.6196,
+    longitude: 123.1944
+  },
+  {
+    id: 'ps2',
+    name: 'Naga City Police Station 2 (Tinago)',
+    latitude: 13.6278,
+    longitude: 123.1946
+  },
+  {
+    id: 'ps3',
+    name: 'Naga City Police Station 3 (Concepcion Pequeña)',
+    latitude: 13.6334,
+    longitude: 123.1927
+  },
+  {
+    id: 'ps4',
+    name: 'Naga City Police Station 4 (San Felipe)',
+    latitude: 13.6178,
+    longitude: 123.1833
+  },
+  {
+    id: 'ps5',
+    name: 'Naga City Police Station 5 (Pacol)',
+    latitude: 13.6486,
+    longitude: 123.2144
+  },
+  {
+    id: 'ps6',
+    name: 'Naga City Police Station 6 (Concepcion Grande)',
+    latitude: 13.6269,
+    longitude: 123.2016
+  },
+  {
+    id: 'ps7',
+    name: 'Naga City Police Station 7 (Tabuco)',
+    latitude: 13.6205,
+    longitude: 123.2001
+  },
+  {
+    id: 'ps8',
+    name: 'Naga City Police Office (Main Headquarters)',
+    latitude: 13.6198,
+    longitude: 123.1947
+  }
+];
 
 const MapComponent = () => {
   const [userLocation, setUserLocation] = useState(null);
@@ -24,6 +77,7 @@ const MapComponent = () => {
   const [zones, setZones] = useState([]);
   const [showZones, setShowZones] = useState(false);
   const [userAddress, setUserAddress] = useState(null);
+  const [contacts, setContacts] = useState([]);
 
   //Fetch logged in user credentials
   const fetchAuthDetails = async () => {
@@ -64,64 +118,200 @@ const MapComponent = () => {
 
   const mapCenter = userLocation || { latitude: 13.6218, longitude: 123.1948 };
 
-  //Distress Functionality
+  // Add this function to decode JWT token
+  const decodeToken = (token) => {
+    try {
+      return JSON.parse(decode(token.split('.')[1]));
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
+
+  // Add the Philippine number formatting function
+  const formatPhilippineNumber = (number) => {
+    if (!number) return null;
+    
+    // Convert to string and remove all non-numeric characters
+    let cleaned = number.toString().replace(/\D/g, '');
+    
+    // Remove leading 0 if present
+    if (cleaned.startsWith('0')) {
+      cleaned = cleaned.substring(1);
+    }
+    
+    // Remove 63 if it's at the start
+    if (cleaned.startsWith('63')) {
+      cleaned = cleaned.substring(2);
+    }
+    
+    // Check if we have a valid 10-digit number
+    if (cleaned.length !== 10) {
+      console.log('Invalid number length:', cleaned.length);
+      return null;
+    }
+    
+    // Add +63 prefix
+    return `+63${cleaned}`;
+  };
+
+  //Update the sendDistressSMS function
+  const sendDistressSMS = async (location, address) => {
+    try {
+      console.log('Starting SMS process...');
+      
+      const { token } = await fetchAuthDetails();
+      const decodedToken = decodeToken(token);
+      console.log('Decoded token:', decodedToken);
+
+      // Fetch user details using the userId from token
+      const userResponse = await axios.get(
+        `${config.API_BASE_URL}/users/users/${decodedToken.userId}`,
+        { headers: { Authorization: token } }
+      );
+      const userName = userResponse.data?.name || decodedToken?.username || 'Unknown User';
+      console.log('User name:', userName);
+
+      console.log('Fetching contacts...');
+      const contactsResponse = await axios.get(
+        `${config.API_BASE_URL}/users/contacts`,
+        { headers: { Authorization: token } }
+      );
+      console.log('Contacts fetched:', contactsResponse.data);
+
+      // Format phone numbers with Philippine format
+      const contactNumbers = contactsResponse.data
+        .map(contact => formatPhilippineNumber(contact.num))
+        .filter(num => num);
+      
+      console.log('Formatted contact numbers:', contactNumbers);
+
+      if (contactNumbers.length === 0) {
+        console.log('No valid contact numbers found');
+        Alert.alert('Error', 'No valid contact numbers found. Please check contact phone numbers.');
+        return false;
+      }
+
+      const message = `DISTRESS ALERT!\n\n` +
+        `From: ${userName}\n` +
+        `Location: ${address || 'Unknown'}\n` +
+        `Coordinates: ${location.latitude}, ${location.longitude}\n` +
+        `Google Maps: https://www.google.com/maps?q=${location.latitude},${location.longitude}\n\n` +
+        `This is an automated distress signal. Please contact emergency services if needed.`;
+      
+      console.log('Message prepared:', message);
+      console.log('Starting to send SMS to contacts...');
+
+      for (const phoneNumber of contactNumbers) {
+        try {
+          console.log('Sending SMS to:', phoneNumber);
+          await new Promise((resolve, reject) => {
+            SendSMS.send({
+              body: message,
+              recipients: [phoneNumber],
+              successTypes: ['sent', 'queued'],
+              allowAndroidSendWithoutReadPermission: true
+            }, (completed, cancelled, error) => {
+              console.log('SMS callback:', { completed, cancelled, error });
+              if (completed) {
+                resolve('sent');
+              } else if (cancelled) {
+                reject(new Error('SMS cancelled'));
+              } else if (error) {
+                reject(new Error(error));
+              }
+            });
+          });
+          console.log('SMS sent successfully to:', phoneNumber);
+        } catch (err) {
+          console.error(`Failed to send SMS to ${phoneNumber}:`, err);
+        }
+      }
+
+      Alert.alert('Success', 'Distress signal sent to all contacts');
+      return true;
+
+    } catch (error) {
+      console.error('Error in SMS process:', error);
+      Alert.alert('Error', 'Failed to send distress SMS');
+      return false;
+    }
+  };
+
+  //Modify handleDistressPress to include SMS
   const handleDistressPress = async () => {
+    console.log('Distress button pressed');
+    
+    if (!userLocation) {
+      console.log('No user location available');
+      Alert.alert('Error', 'Location not available');
+      return;
+    }
+
     if (distressActive) {
+      console.log('Deactivating distress');
+      // Show distress log modal when deactivating
       setDistressModalVisible(true);
       return;
     }
-  
-    if (!userLocation) {
-      Alert.alert('Error', 'Unable to fetch location.');
-      return;
-    }
-  
+
     try {
-      const { token } = await fetchAuthDetails();
+      // Set distress active first
+      console.log('Activating distress state');
+      setDistressActive(true);
 
-      // Fetch locations
-      const locResponse = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
-        headers: { Authorization: token }
-      });
-      setLocations(locResponse.data);
-
-      // Get location details and find matching location
-      const details = await getLocationFromCoordinates(
+      console.log('Getting location details...');
+      const locationDetails = await getLocationFromCoordinates(
         userLocation.latitude,
         userLocation.longitude
       );
+      console.log('Location details:', locationDetails);
 
-      // Create real-time location entry with matched location id
-      const createRealLocPayload = {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        loc_id: details?.locationId || null
-      };
+      // Send SMS after distress is activated
+      console.log('Attempting to send SMS...');
+      const smsSent = await sendDistressSMS(userLocation, locationDetails?.address);
+      console.log('SMS send result:', smsSent);
 
-      // Create the real location
-      await axios.post(
-        `${config.API_BASE_URL}/nav/realloc/add`,
-        createRealLocPayload,
-        { headers: { Authorization: token } }
-      );
+      if (smsSent) {
+        console.log('SMS sent successfully, creating real-time location entry');
+        const { token } = await fetchAuthDetails();
+        
+        const createRealLocPayload = {
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude,
+          loc_id: locationDetails?.locationId || null
+        };
+        console.log('Real location payload:', createRealLocPayload);
 
-      // Fetch the latest real location to get its ID
-      const latestResponse = await axios.get(
-        `${config.API_BASE_URL}/nav/realloc-latest`,
-        { headers: { Authorization: token } }
-      );
+        // Create the real location
+        const realLocResponse = await axios.post(
+          `${config.API_BASE_URL}/nav/realloc/add`,
+          createRealLocPayload,
+          { headers: { Authorization: token } }
+        );
+        console.log('Real location created:', realLocResponse.data);
 
-      if (latestResponse.data && latestResponse.data.data) {
-        setRealLocationId(latestResponse.data.data.id);
-        setLocationDetails(details);
-        setDistressActive(true);
-        Alert.alert('Distress Activated', 'Distress sent to contacts.');
+        // Fetch the latest real location to get its ID
+        const latestResponse = await axios.get(
+          `${config.API_BASE_URL}/nav/realloc-latest`,
+          { headers: { Authorization: token } }
+        );
+        console.log('Latest real location:', latestResponse.data);
+
+        if (latestResponse.data && latestResponse.data.data) {
+          setRealLocationId(latestResponse.data.data.id);
+          setLocationDetails(locationDetails);
+          console.log('Distress process completed successfully');
+        }
       } else {
-        throw new Error('Failed to get real location ID');
+        console.log('SMS sending failed, deactivating distress');
+        setDistressActive(false);
+        Alert.alert('Error', 'Failed to send distress signals. The distress state has been deactivated.');
       }
     } catch (error) {
-      console.error('Error creating real location:', error.response?.data || error);
-      Alert.alert('Error', 'Failed to activate distress.');
+      console.error('Error in distress process:', error);
+      setDistressActive(false);
+      Alert.alert('Error', 'Failed to process distress signal. The distress state has been deactivated.');
     }
   };
 
@@ -132,14 +322,7 @@ const MapComponent = () => {
     }
 
     try {
-      const token = await AsyncStorage.getItem('token');
-      const userId = await AsyncStorage.getItem('userId');
-
-      if (!userId) {
-        console.error('No userId found in storage');
-        Alert.alert('Error', 'User ID not found. Please login again.');
-        return;
-      }
+      const { token } = await fetchAuthDetails();
 
       // Fetch user's contacts
       const contactsResponse = await axios.get(
@@ -147,43 +330,25 @@ const MapComponent = () => {
         { headers: { Authorization: token } }
       );
 
-      // Get all contact IDs
       const contactIds = contactsResponse.data.map(contact => contact.id);
 
-      // Create the distress entry
       const distressPayload = {
         description: distressInput,
         real_id: realLocationId,
         contact_ids: contactIds
       };
 
-      // Log distress details in the required format
-      console.log(JSON.stringify({
-        description: distressPayload.description,
-        real_id: distressPayload.real_id,
-        contact_ids: distressPayload.contact_ids,
-        user_id: Number(userId)
-      }, null, 2));
-
-      const response = await axios.post(
+      await axios.post(
         `${config.API_BASE_URL}/nav/distress/add`,
         distressPayload,
         { headers: { Authorization: token } }
       );
 
-      console.log('Distress response:', response.data);
       setDistressModalVisible(false);
       setDistressInput('');
-      setDistressActive(false);
+      setDistressActive(false); // Turn off distress after saving log
     } catch (error) {
-      console.error('Error creating distress entry:', {
-        error: error.response?.data || error,
-        payload: {
-          description: distressInput,
-          real_id: realLocationId,
-          contactIds: contactIds
-        }
-      });
+      console.error('Error creating distress entry:', error.response?.data || error);
       Alert.alert('Error', 'Failed to create distress log.');
     }
   };
@@ -200,8 +365,6 @@ const MapComponent = () => {
 
         if (response.data && response.data.data) {
           setRealLocationId(response.data.data.id);
-        } else {
-          console.log('No real location found.');
         }
       } catch (error) {
         console.error('Error fetching real location:', error);
@@ -221,18 +384,15 @@ const MapComponent = () => {
     }
   
     try {
-      const token = await AsyncStorage.getItem('token');
-      const userId = await AsyncStorage.getItem('userId');
+      const { token } = await fetchAuthDetails();
   
       const reportPayload = {
-        user_id: userId,
         user_report: reportInput,
         address: addressInput,
         loc_id: selectedLocation,
         report_at: new Date().toISOString(),
       };
   
-      // Submit the report with the selected location ID
       await axios.post(`${config.API_BASE_URL}/nav/report/add`, reportPayload, {
         headers: { Authorization: token },
       });
@@ -263,14 +423,9 @@ const MapComponent = () => {
       const response = await axios.get(`${config.API_BASE_URL}/nav/loc`, {
         headers: { Authorization: token },
       });
-      console.log('All locations:', response.data.map(loc => ({
-        id: loc.id,
-        name: loc.name,
-        coordinates: loc.coordinates
-      })));
       setLocations(response.data);
     } catch (error) {
-      console.error('Error fetching locations:', error);
+      console.error('Error fetching locations:', error.response?.data || error.message);
     }
   };
 
@@ -285,7 +440,6 @@ const MapComponent = () => {
   // Get address from coordinates and find matching location
   const getLocationFromCoordinates = async (latitude, longitude) => {
     try {
-      // Get address from coordinates using Expo Location
       const result = await Location.reverseGeocodeAsync({
         latitude,
         longitude
@@ -294,7 +448,6 @@ const MapComponent = () => {
       if (result.length > 0) {
         const address = result[0];
         
-        // Create a standardized address string
         const addressString = [
           address.street,
           address.district,
@@ -302,17 +455,11 @@ const MapComponent = () => {
           address.region
         ].filter(Boolean).join(', ');
 
-        console.log('Fetched address:', addressString);
-        console.log('Available locations:', locations);
-
-        // Find if this address matches any of our listed locations
         const matchingLocation = locations.find(loc => 
           addressString.toLowerCase().includes(loc.name.toLowerCase()) ||
           loc.name.toLowerCase().includes(address.street?.toLowerCase() || '') ||
           loc.name.toLowerCase().includes(address.district?.toLowerCase() || '')
         );
-
-        console.log('Matching location:', matchingLocation);
 
         if (matchingLocation) {
           return {
@@ -360,18 +507,13 @@ const MapComponent = () => {
       const response = await axios.get(`${config.API_BASE_URL}/zones/zones`, {
         headers: { Authorization: token }
       });
-      
-      // Use Set to get unique location names
-      const uniqueZones = [...new Set(response.data.zones.map(zone => zone.location_name))];
-      console.log('Danger Zones:', uniqueZones);
-      
       setZones(response.data.zones || []);
       
       if (locations.length === 0) {
         fetchLocations();
       }
     } catch (error) {
-      console.error('Error fetching zones:', error);
+      console.error('Error fetching zones:', error.response?.data || error.message);
     }
   };
 
@@ -399,17 +541,11 @@ const MapComponent = () => {
   // Add generateZoneData function back
   const generateZoneData = () => {
     return zones.map(zone => {
-      const location = locations.find(loc => 
-        loc.name.toLowerCase() === zone.location_name.toLowerCase()
-      );
-      
-      if (location && location.coordinates) {
-        // Ensure we have valid numbers for the counts
+      if (zone.latitude && zone.longitude) {
         const distressCount = parseInt(zone.distress_count) || 0;
         const reportCount = parseInt(zone.report_count) || 0;
         const totalCount = distressCount + reportCount;
         
-        // Calculate opacity
         const baseOpacity = 0.1;
         const maxOpacity = 0.5;
         const opacity = Math.min(baseOpacity + (totalCount * 0.05), maxOpacity);
@@ -417,14 +553,14 @@ const MapComponent = () => {
         return {
           id: zone.id,
           name: zone.location_name,
-          type: zone.type,
-          distressCount: distressCount,
-          reportCount: reportCount,
-          opacity: opacity,
           coordinate: {
-            latitude: parseFloat(location.coordinates.x),
-            longitude: parseFloat(location.coordinates.y)
-          }
+            latitude: parseFloat(zone.latitude),
+            longitude: parseFloat(zone.longitude)
+          },
+          type: zone.type,
+          distressCount,
+          reportCount,
+          opacity
         };
       }
       return null;
@@ -493,6 +629,28 @@ const MapComponent = () => {
               </Callout>
             </Marker>
           </React.Fragment>
+        ))}
+
+        {/* Police Station Markers */}
+        {POLICE_STATIONS.map(station => (
+          <Marker
+            key={station.id}
+            coordinate={{
+              latitude: station.latitude,
+              longitude: station.longitude
+            }}
+            onPress={() => {
+              Alert.alert(
+                station.name,
+                'Police Station',
+                [{ text: 'OK', onPress: () => {} }]
+              );
+            }}
+          >
+            <View style={styles.policeMarker}>
+              <View style={styles.policeMarkerInner} />
+            </View>
+          </Marker>
         ))}
       </MapView>
 
@@ -716,6 +874,27 @@ const styles = StyleSheet.create({
     marginTop: 10,
     gap: 10
   },
+  policeMarker: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#007BFF',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  policeMarkerInner: {
+    flex: 1,
+    borderRadius: 8,
+    backgroundColor: '#007BFF',
+  }
 });
 
 export default MapComponent;

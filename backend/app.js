@@ -19,6 +19,12 @@ app.use(bodyParser.json());
 // Swagger setup
 SwaggerSetup(app);
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 // Routes
 app.use('/auth', authRoute);
 app.use('/users', usersRoute);

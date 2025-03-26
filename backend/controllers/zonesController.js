@@ -45,14 +45,15 @@ const checkAndCreateZones = async () => {
 // setInterval(checkAndCreateZones, 3600000);
 
 // Get all zones
-exports.allZones = async (_, res) => {
+exports.allZones = async (req, res) => {
   try {
-    // Modified query to keep individual zones but sum counts per location
     const query = `
       SELECT 
         z.id,
         z.type, 
         l.name AS location_name,
+        ST_X(l.coordinates) as latitude,
+        ST_Y(l.coordinates) as longitude,
         (
           SELECT COUNT(*) 
           FROM distress d 
@@ -69,7 +70,6 @@ exports.allZones = async (_, res) => {
       ORDER BY l.name, z.id
     `;
     const [zones] = await db.execute(query);
-
     res.status(200).json({ zones });
   } catch (error) {
     console.error('Error fetching zones:', error);

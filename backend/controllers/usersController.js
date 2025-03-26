@@ -1,5 +1,6 @@
 const db = require('../database');
-const bcrypt = require('bcrypt');
+// Remove bcrypt import since we're not using it
+// const bcrypt = require('bcrypt');
 
 // Get all users
 exports.getUsers = async (req, res) => {
@@ -48,29 +49,81 @@ exports.getUser = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const user_id = req.params.id;
-    const { name, username, password, role_id, num, email } = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = req.params.id;
+    const updates = req.body;
+    
+    console.log('Updating user:', { 
+      userId, 
+      updates,
+      body: req.body,
+      params: req.params
+    });
 
-    if (!user_id || !name || !username || !password || !role_id) {
-      return res.status(400).json({ error: 'Invalid input', message: 'Please provide name, username, password, role_id, num, and email' });
+    const connection = await db;
+    
+    // Build update query dynamically based on provided fields
+    const updateFields = [];
+    const updateValues = [];
+    
+    // Only process fields that are actually present in the updates object
+    Object.keys(updates).forEach(key => {
+      switch(key) {
+        case 'name':
+        case 'username':
+        case 'email':
+        case 'num':
+        case 'address':
+          updateFields.push(`${key} = ?`);
+          updateValues.push(updates[key]);
+          break;
+        case 'isOnline':
+          updateFields.push('isOnline = ?');
+          updateValues.push(updates.isOnline ? 1 : 0);
+          break;
+        // Add password case separately if needed
+      }
+    });
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
     }
 
     const updateQuery = `
       UPDATE users 
-      SET name = ?, username = ?, password = ?, role_id = ?, num = ?, email = ? 
-      WHERE id = ?;
+      SET ${updateFields.join(', ')}
+      WHERE id = ?
     `;
-    const [result] = await db.execute(updateQuery, [name, username, hashedPassword, role_id, num, email, user_id]);
+    updateValues.push(userId);
+
+    console.log('SQL Debug:', {
+      query: updateQuery,
+      values: updateValues,
+      sql: connection.format(updateQuery, updateValues)
+    });
+
+    const [result] = await connection.query(updateQuery, updateValues);
+
+    console.log('Update result:', result);
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: true, message: 'Account does not exist' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    res.status(200).json({ message: 'User updated successfully' });
+    res.json({ 
+      message: 'User updated successfully',
+      updates: updates,
+      result: result
+    });
+
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error('Error updating user:', {
+      message: error.message,
+      sql: error.sql
+    });
+    res.status(500).json({ 
+      error: 'Failed to update user', 
+      details: error.message
+    });
   }
 };
 
