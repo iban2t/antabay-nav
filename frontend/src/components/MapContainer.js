@@ -56,6 +56,36 @@ const POLICE_STATIONS = [
   }
 ];
 
+const Legend = ({ showZones }) => (
+  <div className="legend-container">
+    <h3 className="legend-title">Map Legend</h3>
+    <div className="legend-item">
+      <img src={markerIcon} alt="location" className="legend-icon" />
+      <span className="legend-text">Your Location</span>
+    </div>
+    <div className="legend-item">
+      <div className="legend-icon distress-icon" />
+      <span className="legend-text">Distress Signal</span>
+    </div>
+    <div className="legend-item">
+      <div className="legend-icon police-icon" />
+      <span className="legend-text">Police Station</span>
+    </div>
+    {showZones && (
+      <>
+        <div className="legend-item">
+          <div className="legend-icon danger-zone" />
+          <span className="legend-text">Danger Zone</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-icon safe-zone" />
+          <span className="legend-text">Safe Zone</span>
+        </div>
+      </>
+    )}
+  </div>
+);
+
 function MapComponent() {
   const [userLocation, setUserLocation] = useState(null);
   const [viewport, setViewport] = useState({
@@ -292,6 +322,7 @@ function MapComponent() {
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
+      <Legend showZones={showZones} />
       <div className="toggle-container">
         <label className="toggle-label">
           Show Zones
@@ -456,6 +487,58 @@ function MapComponent() {
         .hover-popup p {
           margin: 2px 0;
           font-size: 12px;
+        }
+        .legend-container {
+          position: absolute;
+          top: 70px;
+          left: 10px;
+          background: white;
+          padding: 12px;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          z-index: 1;
+        }
+        .legend-title {
+          margin: 0 0 8px 0;
+          font-size: 14px;
+          font-weight: bold;
+          color: #333;
+        }
+        .legend-item {
+          display: flex;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+        .legend-icon {
+          width: 24px;
+          height: 24px;
+          margin-right: 8px;
+        }
+        .legend-text {
+          font-size: 12px;
+          color: #666;
+        }
+        .police-icon {
+          width: 20px;
+          height: 20px;
+          background-color: #007BFF;
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .danger-zone {
+          width: 20px;
+          height: 20px;
+          background-color: rgba(255, 0, 0, 0.3);
+          border: 1px solid #666;
+          border-radius: 50%;
+        }
+        .safe-zone {
+          width: 20px;
+          height: 20px;
+          background-color: rgba(0, 255, 0, 0.3);
+          border: 1px solid #666;
+          border-radius: 50%;
         }
       `}</style>
     </div>
