@@ -1,9 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("../database");
-
 const config = require("../config/config");
-const secret_key = config.secretKey;
 
 // Register
 exports.registerUser = async (req, res) => {
@@ -95,10 +93,10 @@ exports.loginUser = async (req, res) => {
         return res.status(401).json({ error: "Invalid username or password" });
       }
 
-      // Each user gets their own unique token
+      // Use config.secretKey instead of process.env.JWT_SECRET
       const token = jwt.sign(
         { userId: user.id, username: user.username },
-        process.env.JWT_SECRET,
+        config.secretKey,
         { expiresIn: '1h' }
       );
 
